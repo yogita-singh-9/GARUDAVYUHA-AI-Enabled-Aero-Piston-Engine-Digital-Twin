@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GARUDAVYUHA – AI-Enabled Aero Piston Engine Digital Twin | SIH 2026</title>
+  <meta name="description" content="AI-Enabled Real-Time Digital Twin System for Health Monitoring, Fault Prediction and Mission Reliability Enhancement of Aero Piston Engines used in MALE UAVs.">
+
+  <!-- External Styles & Fonts -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/twin3d.css">
+  <link rel="stylesheet" href="css/views.css">
+
+  <!-- MathJax for Mathematical Formulations -->
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+  <!-- Chart.js (Vendored) -->
+  <script src="libs/chart.umd.min.js"></script>
+
+  <!-- Brython Python 3 In-Browser Runtime -->
+  <script src="libs/brython.js"></script>
+  <script src="libs/brython_stdlib.js"></script>
+
+  <!-- Three.js Import Map & Bridge for Python (Brython) Interop -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./libs/three.module.js",
+      "three/addons/": "./libs/"
+    }
+  }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from './libs/OrbitControls.js';
+    import { GLTFLoader } from './libs/GLTFLoader.js';
+    window.THREE = THREE;
+    window.OrbitControls = OrbitControls;
+    window.GLTFLoader = GLTFLoader;
+  </script>
+</head>
+<body onload="brython({debug: 1, pythonpath: ['/py']})">
+
+  <!-- =====================================================================
+       TOP GCS COMMAND HEADER (Exactly matching image)
+       ===================================================================== -->
+  <header id="gcs-header">
+    <div class="brand-container">
+      <div class="brand-insignia">
+        <i class="fa-solid fa-jet-fighter"></i>
+      </div>
+      <div class="brand-titles">
+        <div class="brand-title">
+          GARUDAVYUHA
+        </div>
+        <div class="brand-sub">AI-ENABLED ENGINE DIGITAL TWIN</div>
+        <div class="brand-tagline">PEHLE PREDICT, FIR PROTECT</div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav id="gcs-nav">
+      <button class="nav-tab active" data-view="command-center">
+        <i class="fa-solid fa-house-signal"></i> COMMAND CENTER
+      </button>
+      <button class="nav-tab" data-view="digital-twin">
+        <i class="fa-solid fa-cube"></i> 3D DIGITAL TWIN
+      </button>
+      <button class="nav-tab" data-view="ai-diagnostics">
+        <i class="fa-solid fa-brain"></i> AI DIAGNOSTICS
+      </button>
+      <button class="nav-tab" data-view="rul-health">
+        <i class="fa-solid fa-chart-line"></i> RUL & HEALTH
+      </button>
+      <button class="nav-tab" data-view="mission-simulator">
+        <i class="fa-solid fa-sliders"></i> MISSION SIMULATOR
+      </button>
+      <button class="nav-tab" data-view="mission-replay">
+        <i class="fa-solid fa-clock-rotate-left"></i> MISSION REPLAY
+      </button>
+      <button class="nav-tab" data-view="maintenance-center">
+        <i class="fa-solid fa-gear"></i> MAINTENANCE CENTER
+      </button>
+      <button class="nav-tab" id="btn-open-math-accuracy">
+        <i class="fa-solid fa-calculator"></i> MODEL ACCURACY
+      </button>
+    </nav>
+
+    <!-- Header Meta & Toggles -->
+    <div class="header-right-deck">
+      <div class="demo-toggle-wrap">
+        <span class="toggle-label">DEMO MODE</span>
+        <label class="switch">
+          <input type="checkbox" id="demo-mode-checkbox" checked>
+          <span class="slider round"></span>
+        </label>
+      </div>
+
+      <div class="status-live-badge">
+        <span class="pulse-dot"></span> LIVE
+      </div>
+
+      <div class="time-readout">
+        <div class="clock-time" id="header-clock">10:24:36 AM</div>
+        <div class="clock-date">23 May 2025</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- =====================================================================
+       MAIN VIEWPORT CONTAINER
+       ===================================================================== -->
+  <main id="app-viewport">
+
+    <!-- 1. VIEW: COMMAND CENTER (Exactly matching provided screenshot) -->
+    <section id="view-command-center" class="view-section active">
+      
+      <!-- Top Grid: Left Sidebar (Overview & Health), Center (3D Engine), Right Sidebar (Live Sensor Panel) -->
+      <div class="cc-main-grid">
+        
+        <!-- LEFT PANEL: Mission Overview, Engine Health, Readiness, RUL, Alerts -->
+        <aside class="cc-sidebar-left">
+          
+          <!-- Mission Overview -->
+          <div class="gcs-card">
+            <div class="card-header-clean">MISSION OVERVIEW</div>
+            <div class="key-value-list">
+              <div class="kv-row">
+                <span class="kv-key">UAV ID</span>
+                <span class="kv-val">UDAAN-01</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">MISSION ID</span>
+                <span class="kv-val">ISR-042</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">MISSION TYPE</span>
+                <span class="kv-val">ISR - LONG ENDURANCE</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">ALTITUDE</span>
+                <span class="kv-val">18,200 ft</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">AMBIENT TEMP</span>
+                <span class="kv-val">42 °C</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">MISSION TIME</span>
+                <span class="kv-val" id="mission-time-val">03:42:18</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">CONNECTION</span>
+                <span class="kv-val status-green">LIVE ●</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Engine Health Dial -->
+          <div class="gcs-card">
+            <div class="card-header-clean">ENGINE HEALTH</div>
+            <div class="health-radial-box">
+              <div class="radial-ring-wrap">
+                <svg class="radial-svg" viewBox="0 0 100 100">
+                  <circle class="radial-bg" cx="50" cy="50" r="40"></circle>
+                  <circle class="radial-meter" id="health-meter-circle" cx="50" cy="50" r="40"></circle>
+                </svg>
+                <div class="radial-text" id="health-val-text">87%</div>
+              </div>
+              <div class="radial-legend">
+                <div class="health-status-label" id="health-status-label">HEALTHY</div>
+                <div class="health-conf-label">Confidence: <span id="health-conf-val">92%</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mission Readiness -->
+          <div class="gcs-card">
+            <div class="card-header-clean">MISSION READINESS</div>
+            <div class="readiness-box">
+              <div class="readiness-top">
+                <span class="readiness-num" id="readiness-num">84%</span>
+              </div>
+              <div class="progress-bar-track">
+                <div class="progress-bar-fill" id="readiness-bar-fill" style="width: 84%;"></div>
+              </div>
+              <div class="readiness-risk-label" id="readiness-risk-label">LOW RISK</div>
+            </div>
+          </div>
+
+          <!-- Estimated RUL -->
+          <div class="gcs-card">
+            <div class="card-header-clean">ESTIMATED RUL</div>
+            <div class="rul-box">
+              <div class="rul-number-row">
+                <span class="rul-hours" id="rul-hours-text">42.7</span>
+                <span class="rul-unit">HOURS</span>
+              </div>
+              <div class="rul-sub-row">
+                <span class="rul-margin"><i class="fa-solid fa-hourglass-half"></i> ± 5.2 hrs</span>
+                <span class="rul-badge" id="rul-term-badge">MEDIUM TERM</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Alerts -->
+          <div class="gcs-card flex-1">
+            <div class="card-header-clean">ACTIVE ALERTS</div>
+            <div class="alert-list-items" id="alerts-container">
+              <div class="alert-item warning">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <div class="alert-content">
+                  <div class="alert-title">AI: Vibration trend rising</div>
+                  <div class="alert-time">10:23:41 AM</div>
+                </div>
+              </div>
+              <div class="alert-item warning">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <div class="alert-content">
+                  <div class="alert-title">Oil Pressure slightly lower</div>
+                  <div class="alert-time">10:22:18 AM</div>
+                </div>
+              </div>
+              <div class="alert-item info">
+                <i class="fa-solid fa-circle-info"></i>
+                <div class="alert-content">
+                  <div class="alert-title">No critical alerts</div>
+                  <div class="alert-time">10:20:05 AM</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </aside>
+
+        <!-- CENTER PANEL: 3D Digital Twin Hero Viewport with In-Scene Overlays -->
+        <div class="cc-center-viewport">
+          <div class="twin-viewport-wrapper">
+            
+            <!-- In-Scene Top Header -->
+            <div class="twin-scene-header">
+              <div class="twin-scene-title">
+                3D DIGITAL TWIN - AERO PISTON ENGINE
+              </div>
+              <div class="twin-scene-badge">
+                <span class="pulse-dot"></span> LIVE SYNCHRONIZED
+              </div>
+            </div>
+
+            <!-- In-Scene Left Component Health Overlay List (Matching Image) -->
+            <div class="twin-component-health-panel">
+              <div class="comp-panel-title">COMPONENT HEALTH</div>
+              <div class="comp-legend">
+                <span><i class="fa-solid fa-circle" style="color: #10b981;"></i> HEALTHY</span>
+                <span><i class="fa-solid fa-circle" style="color: #f59e0b;"></i> WARNING</span>
+                <span><i class="fa-solid fa-circle" style="color: #ef4444;"></i> CRITICAL</span>
+              </div>
+              <div class="comp-buttons-col" id="comp-buttons-col">
+                <button class="comp-status-btn healthy" data-comp="cylinder_1">CYLINDER-1</button>
+                <button class="comp-status-btn healthy" data-comp="cylinder_2">CYLINDER-2</button>
+                <button class="comp-status-btn healthy" data-comp="cylinder_3">CYLINDER-3</button>
+                <button class="comp-status-btn healthy" data-comp="cylinder_4">CYLINDER-4</button>
+                <button class="comp-status-btn critical active" data-comp="fuel_injector">FUEL INJECTOR</button>
+                <button class="comp-status-btn healthy" data-comp="ignition_system">IGNITION SYSTEM</button>
+                <button class="comp-status-btn warning" data-comp="oil_system">OIL SYSTEM</button>
+                <button class="comp-status-btn healthy" data-comp="cooling_system">COOLING SYSTEM</button>
+                <button class="comp-status-btn healthy" data-comp="exhaust_system">EXHAUST SYSTEM</button>
+                <button class="comp-status-btn healthy" data-comp="sensors">SENSORS</button>
+              </div>
+            </div>
+
+            <!-- Three.js Canvas Container -->
+            <div id="engine-canvas-container"></div>
+
+            <!-- Loading Spinner -->
+            <div id="engine-3d-loading">
+              <div class="loading-spinner-ring"></div>
+              <div class="loading-text">LOADING ROTAX 914 DIGITAL TWIN...</div>
+              <div style="font-family: var(--font-mono); font-size: 12px; color: var(--text-muted);" id="engine-loading-progress">0%</div>
+            </div>
+
+            <!-- In-Scene Right Floating Component Card (Matching Image) -->
+            <div class="twin-floating-card" id="floating-component-card">
+              <div class="fcard-header">
+                <span class="fcard-title" id="fcard-title">FUEL INJECTOR - 4</span>
+                <span class="fcard-badge-critical" id="fcard-badge">CRITICAL</span>
+              </div>
+
+              <div class="fcard-section">
+                <div class="fcard-label">HEALTH</div>
+                <div class="fcard-health-val" id="fcard-health-val">23%</div>
+                <div class="fcard-bar-track">
+                  <div class="fcard-bar-fill red" id="fcard-bar-fill" style="width: 23%;"></div>
+                </div>
+              </div>
+
+              <div class="fcard-section">
+                <div class="fcard-label">STATUS</div>
+                <div class="fcard-status-val red" id="fcard-status-val">Abnormal</div>
+              </div>
+
+              <div class="fcard-section">
+                <div class="fcard-label">AI PREDICTION</div>
+                <div class="fcard-pred-val red" id="fcard-pred-val">Injector Abnormality</div>
+              </div>
+
+              <div class="fcard-section">
+                <div class="fcard-label">CONFIDENCE</div>
+                <div class="fcard-conf-val" id="fcard-conf-val">78%</div>
+              </div>
+
+              <div class="fcard-section">
+                <div class="fcard-label">RELEVANT PARAMETERS</div>
+                <div class="fcard-param-list" id="fcard-param-list">
+                  <div class="fcard-param-row">
+                    <span>Fuel Flow</span>
+                    <span class="param-val-red">↓ -12%</span>
+                  </div>
+                  <div class="fcard-param-row">
+                    <span>EGT</span>
+                    <span class="param-val-red">↑ +9%</span>
+                  </div>
+                  <div class="fcard-param-row">
+                    <span>Vibration</span>
+                    <span class="param-val-red">↑ +18%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="fcard-section">
+                <div class="fcard-label">RECOMMENDATION</div>
+                <div class="fcard-rec-text" id="fcard-rec-text">
+                  Inspect injector and clean/replace if required
+                </div>
+              </div>
+
+              <button class="fcard-btn-details" id="btn-fcard-details">
+                VIEW DETAILS
+              </button>
+            </div>
+
+            <!-- In-Scene Bottom Navigation Hints -->
+            <div class="twin-scene-footer-hints">
+              <span><i class="fa-solid fa-arrows-up-down-left-right"></i> Drag to rotate</span>
+              <span><i class="fa-solid fa-up-down"></i> Scroll to zoom</span>
+              <span><i class="fa-solid fa-hand-pointer"></i> Click on component to inspect</span>
+            </div>
+
+            <!-- Floating Tool Buttons (Thermal / Wireframe / Reset) -->
+            <div class="twin-quick-tools">
+              <button class="tool-btn" id="btn-toggle-thermal" title="Toggle Thermal Infrared Mode">
+                <i class="fa-solid fa-fire"></i>
+              </button>
+              <button class="tool-btn" id="btn-toggle-wireframe" title="Toggle Wireframe Mode">
+                <i class="fa-solid fa-border-none"></i>
+              </button>
+              <button class="tool-btn" id="btn-toggle-autorotate" title="Toggle Auto Rotate">
+                <i class="fa-solid fa-rotate"></i>
+              </button>
+              <button class="tool-btn" id="btn-reset-camera" title="Reset View">
+                <i class="fa-solid fa-compress"></i>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- RIGHT PANEL: Live Sensor Panel (3x3 Grid + Telemetry Stream) -->
+        <aside class="cc-sidebar-right">
+          
+          <div class="gcs-card flex-1" style="display: flex; flex-direction: column;">
+            <div class="card-header-between">
+              <span class="card-header-clean">LIVE SENSOR PANEL</span>
+              <span class="view-grid-tag">View: Grid <i class="fa-solid fa-chevron-down"></i></span>
+            </div>
+
+            <!-- 3x3 Live Sensor Cards Grid (Matching Image) -->
+            <div class="sensor-grid-3x3">
+              
+              <!-- RPM -->
+              <div class="sensor-item-card">
+                <div class="sc-title">RPM</div>
+                <div class="sc-value" id="val-rpm">5180</div>
+                <div class="sc-unit">RPM</div>
+                <canvas class="sc-sparkline" id="sparkline-rpm" width="100" height="24"></canvas>
+              </div>
+
+              <!-- CHT -->
+              <div class="sensor-item-card">
+                <div class="sc-title">CHT</div>
+                <div class="sc-value" id="val-cht">142</div>
+                <div class="sc-unit">°C</div>
+                <canvas class="sc-sparkline" id="sparkline-cht" width="100" height="24"></canvas>
+              </div>
+
+              <!-- EGT -->
+              <div class="sensor-item-card">
+                <div class="sc-title">EGT</div>
+                <div class="sc-value" id="val-egt">715</div>
+                <div class="sc-unit">°C</div>
+                <canvas class="sc-sparkline" id="sparkline-egt" width="100" height="24"></canvas>
+              </div>
+
+              <!-- OIL PRESSURE -->
+              <div class="sensor-item-card">
+                <div class="sc-title">OIL PRESSURE</div>
+                <div class="sc-value" id="val-oil_press">4.1</div>
+                <div class="sc-unit">bar</div>
+                <canvas class="sc-sparkline" id="sparkline-oil_press" width="100" height="24"></canvas>
+              </div>
+
+              <!-- OIL TEMP -->
+              <div class="sensor-item-card">
+                <div class="sc-title">OIL TEMP</div>
+                <div class="sc-value" id="val-oil_temp">92</div>
+                <div class="sc-unit">°C</div>
+                <canvas class="sc-sparkline" id="sparkline-oil_temp" width="100" height="24"></canvas>
+              </div>
+
+              <!-- FUEL FLOW -->
+              <div class="sensor-item-card">
+                <div class="sc-title">FUEL FLOW</div>
+                <div class="sc-value" id="val-fuel_flow">23.6</div>
+                <div class="sc-unit">L/hr</div>
+                <canvas class="sc-sparkline" id="sparkline-fuel_flow" width="100" height="24"></canvas>
+              </div>
+
+              <!-- VIBRATION -->
+              <div class="sensor-item-card">
+                <div class="sc-title">VIBRATION</div>
+                <div class="sc-value" id="val-vibration">0.38</div>
+                <div class="sc-unit">g</div>
+                <canvas class="sc-sparkline" id="sparkline-vibration" width="100" height="24"></canvas>
+              </div>
+
+              <!-- BATTERY VOLT -->
+              <div class="sensor-item-card">
+                <div class="sc-title">BATTERY VOLT</div>
+                <div class="sc-value" id="val-battery_volt">27.4</div>
+                <div class="sc-unit">V</div>
+                <canvas class="sc-sparkline" id="sparkline-battery_volt" width="100" height="24"></canvas>
+              </div>
+
+              <!-- INJECTION TIMING -->
+              <div class="sensor-item-card">
+                <div class="sc-title">INJECTION TIMING</div>
+                <div class="sc-value" id="val-injection_timing">12.6</div>
+                <div class="sc-unit">°CA</div>
+                <canvas class="sc-sparkline" id="sparkline-injection_timing" width="100" height="24"></canvas>
+              </div>
+
+            </div>
+
+            <!-- Telemetry Stream Banner (100 Hz) -->
+            <div class="stream-banner">
+              <div class="stream-header-row">
+                <span class="stream-title">TELEMETRY STREAM</span>
+                <span class="stream-rate">100 Hz <i class="fa-solid fa-chevron-down"></i></span>
+              </div>
+              <canvas id="telemetry-stream-canvas" width="300" height="34"></canvas>
+            </div>
+
+          </div>
+
+        </aside>
+
+      </div>
+
+      <!-- Bottom Dashboard Section (5 Graphs + Event Timeline + Diagnostics Summary) -->
+      <div class="cc-bottom-section">
+        
+        <!-- Row 1: 5 Telemetry Graphs + Event Timeline -->
+        <div class="bottom-graphs-row">
+          
+          <!-- RPM Graph -->
+          <div class="gcs-graph-box">
+            <div class="graph-box-header">
+              <span>RPM (RPM)</span>
+              <span class="graph-box-val" id="graph-val-rpm">5180 〉</span>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="chart-rpm"></canvas>
+            </div>
+          </div>
+
+          <!-- CHT Graph -->
+          <div class="gcs-graph-box">
+            <div class="graph-box-header">
+              <span>CHT (°C)</span>
+              <span class="graph-box-val" id="graph-val-cht">142 〉</span>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="chart-cht"></canvas>
+            </div>
+          </div>
+
+          <!-- EGT Graph -->
+          <div class="gcs-graph-box">
+            <div class="graph-box-header">
+              <span>EGT (°C)</span>
+              <span class="graph-box-val" id="graph-val-egt">715 〉</span>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="chart-egt"></canvas>
+            </div>
+          </div>
+
+          <!-- OIL PRESSURE Graph -->
+          <div class="gcs-graph-box">
+            <div class="graph-box-header">
+              <span>OIL PRESSURE (bar)</span>
+              <span class="graph-box-val" id="graph-val-oil">4.1 〉</span>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="chart-oil"></canvas>
+            </div>
+          </div>
+
+          <!-- VIBRATION Graph -->
+          <div class="gcs-graph-box">
+            <div class="graph-box-header">
+              <span>VIBRATION (g)</span>
+              <span class="graph-box-val" id="graph-val-vib">0.38 〉</span>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="chart-vib"></canvas>
+            </div>
+          </div>
+
+          <!-- EVENT TIMELINE Box -->
+          <div class="gcs-timeline-box">
+            <div class="timeline-header-clean">EVENT TIMELINE</div>
+            <div class="timeline-list" id="bottom-timeline-list">
+              <div class="tl-row warning">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span class="tl-time">10:23:41 AM</span>
+                <span class="tl-desc">AI: Vibration trend rising</span>
+              </div>
+              <div class="tl-row warning">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span class="tl-time">10:22:18 AM</span>
+                <span class="tl-desc">Oil Pressure slightly lower</span>
+              </div>
+              <div class="tl-row healthy">
+                <i class="fa-solid fa-circle-check"></i>
+                <span class="tl-time">10:20:05 AM</span>
+                <span class="tl-desc">Normal operation</span>
+              </div>
+              <div class="tl-row healthy">
+                <i class="fa-solid fa-circle-check"></i>
+                <span class="tl-time">10:18:42 AM</span>
+                <span class="tl-desc">Engine start</span>
+              </div>
+            </div>
+            <div class="tl-footer-btn" id="btn-view-full-log">
+              VIEW FULL LOG
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Row 2: AI Diagnostics Summary + Recommended Action + Quick Actions -->
+        <div class="bottom-action-row">
+          
+          <!-- AI Diagnostics Summary -->
+          <div class="gcs-card ai-diag-summary-card">
+            <div class="card-header-clean">AI DIAGNOSTICS SUMMARY</div>
+            <div class="diag-summary-body">
+              
+              <!-- Anomaly Score -->
+              <div class="diag-col">
+                <div class="diag-label">ANOMALY SCORE</div>
+                <div class="diag-score-val" id="diag-score-text">0.68 / 1.00</div>
+                <div class="diag-bar-track">
+                  <div class="diag-bar-fill" id="diag-score-fill" style="width: 68%;"></div>
+                </div>
+              </div>
+
+              <!-- Most Likely Fault -->
+              <div class="diag-col">
+                <div class="diag-label">MOST LIKELY FAULT</div>
+                <div class="diag-fault-name red" id="diag-fault-text">Injector Abnormality</div>
+              </div>
+
+              <!-- Confidence Dial -->
+              <div class="diag-conf-dial-wrap">
+                <svg class="diag-conf-svg" viewBox="0 0 60 60">
+                  <circle class="conf-bg" cx="30" cy="30" r="24"></circle>
+                  <circle class="conf-meter" id="diag-conf-meter" cx="30" cy="30" r="24" style="stroke-dashoffset: 36;"></circle>
+                </svg>
+                <span class="conf-percent" id="diag-conf-percent">78%</span>
+              </div>
+
+              <!-- Severity -->
+              <div class="diag-col">
+                <div class="diag-label">SEVERITY</div>
+                <div class="diag-severity-val yellow" id="diag-severity-text">MEDIUM</div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Recommended Action -->
+          <div class="gcs-card rec-action-card">
+            <div class="card-header-clean">RECOMMENDED ACTION</div>
+            <div class="rec-action-body">
+              <div class="rec-action-text" id="rec-action-text">
+                Inspect fuel injector circuit and perform cleaning or replacement if necessary. Monitor EGT and vibration.
+              </div>
+              <button class="btn-rec-diagnostics" id="btn-view-diagnostics">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> VIEW FULL DIAGNOSTICS
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Actions Buttons (4 Buttons Matching Image) -->
+          <div class="gcs-card quick-actions-card">
+            <div class="card-header-clean">QUICK ACTIONS</div>
+            <div class="quick-actions-grid">
+              <button class="qa-btn" id="btn-qa-simulate">
+                <i class="fa-solid fa-atom"></i> SIMULATE FAULT
+              </button>
+              <button class="qa-btn" id="btn-qa-mission">
+                <i class="fa-solid fa-plane-up"></i> RUN MISSION SIM
+              </button>
+              <button class="qa-btn" id="btn-qa-replay">
+                <i class="fa-solid fa-play"></i> REPLAY MISSION
+              </button>
+              <button class="qa-btn" id="btn-qa-maintenance">
+                <i class="fa-solid fa-clipboard-check"></i> MAINTENANCE PLAN
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Bottom Disclaimer Text -->
+      <div class="bottom-disclaimer">
+        All data is simulated for demonstration purposes
+      </div>
+
+    </section>
+
+    <!-- 2. VIEW: 3D DIGITAL TWIN -->
+    <section id="view-digital-twin" class="view-section">
+      <div class="twin-full-viewport" id="twin-deep-viewport-container"></div>
+    </section>
+
+    <!-- 3. VIEW: AI DIAGNOSTICS -->
+    <section id="view-ai-diagnostics" class="view-section">
+      <div class="ai-primary-card">
+        <div class="gcs-panel">
+          <div class="panel-header">
+            <span class="panel-title"><i class="fa-solid fa-brain"></i> Neural Anomaly Score</span>
+            <span class="panel-badge badge-warning" id="ai-view-badge">MEDIUM</span>
+          </div>
+          <div class="ai-score-hero">
+            <div class="ai-score-big" id="ai-view-score">0.68</div>
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+              SCALE: 0.00 (NOMINAL) TO 1.00 (ANOMALOUS)
+            </div>
+            <div style="width: 100%; margin-top: 14px;">
+              <div class="xai-track" style="height: 10px;">
+                <div class="xai-fill up" id="ai-view-score-bar" style="width: 68%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px;">
+            <div class="metric-tile">
+              <span class="tile-label">Most Likely Fault</span>
+              <span class="tile-val" id="ai-view-fault-name" style="font-size: 15px; color: #ef4444;">Injector Abnormality</span>
+              <span class="tile-desc" id="ai-view-fault-subsystem">Fuel Injection & Induction</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="metric-tile">
+                <span class="tile-label">Confidence</span>
+                <span class="tile-val" id="ai-view-confidence">78%</span>
+              </div>
+              <div class="metric-tile">
+                <span class="tile-label">Severity Level</span>
+                <span class="tile-val" id="ai-view-severity" style="color: #f59e0b;">MEDIUM</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="gcs-panel">
+          <div class="panel-header">
+            <span class="panel-title"><i class="fa-solid fa-server"></i> Active ML Pipeline</span>
+            <span class="panel-badge">3 MODELS</span>
+          </div>
+          <div style="font-family: var(--font-mono); font-size: 11px; display: flex; flex-direction: column; gap: 8px;">
+            <div>
+              <div style="color: var(--cyan-telemetry); font-weight: 700;">1. Bi-LSTM Autoencoder</div>
+              <div style="color: var(--text-muted); font-size: 10px;">Continuous multi-channel reconstruction error</div>
+            </div>
+            <div>
+              <div style="color: var(--cyan-telemetry); font-weight: 700;">2. Isolation Forest (Aero-Trained)</div>
+              <div style="color: var(--text-muted); font-size: 10px;">Unsupervised multivariate outlier scoring</div>
+            </div>
+            <div>
+              <div style="color: var(--cyan-telemetry); font-weight: 700;">3. XGBoost Fault Classifier</div>
+              <div style="color: var(--text-muted); font-size: 10px;">6-class Rotax 914 aerodynamic degradation model</div>
+            </div>
+            <div style="margin-top: 6px; padding: 6px 8px; background: rgba(0,240,255,0.06); border-radius: 4px; color: #94a3b8; font-size: 10px;">
+              <i class="fa-solid fa-circle-check" style="color: var(--cyan-telemetry);"></i> SIMULATED AI DEMONSTRATION ENGINE
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-details-panel">
+        <div class="gcs-panel">
+          <div class="panel-header">
+            <span class="panel-title"><i class="fa-solid fa-chart-column"></i> Explainable AI (XAI): Parameter Contribution</span>
+            <span class="panel-badge">SHAPLEY ATTRIBUTION</span>
+          </div>
+          <div class="xai-card-content">
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+              Shows which physical telemetry channels pushed the anomaly score beyond normal operating bounds:
+            </div>
+            <div class="xai-bar-group" id="xai-contributions-container">
+              <!-- SHAP bars -->
+            </div>
+            <div class="ai-explanation-box" id="ai-natural-explanation">
+              <strong>AI INTERPRETATION:</strong> Combined parameter behaviour deviates from learned healthy operating pattern. Fuel Flow dropped 12%, EGT elevated 9%, Vibration ripple elevated 18%.
+            </div>
+          </div>
+        </div>
+
+        <div class="gcs-panel">
+          <div class="panel-header">
+            <span class="panel-title"><i class="fa-solid fa-shield-halved"></i> Actionable Tactical Advisory</span>
+            <span class="panel-badge">OPERATOR GUIDANCE</span>
+          </div>
+          <div style="font-size: 13px; line-height: 1.5; color: #e2e8f0;" id="ai-tactical-recommendation">
+            Inspect fuel injector circuit and perform cleaning or replacement if necessary. Monitor EGT and vibration.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. VIEW: RUL & HEALTH ANALYTICS -->
+    <section id="view-rul-health" class="view-section">
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div class="gcs-panel rul-hero-box">
+          <span class="panel-badge badge-warning" id="rul-view-status-badge">MEDIUM TERM</span>
+          <div style="font-family: var(--font-subheading); font-size: 13px; color: var(--text-muted); margin-top: 10px;">
+            ESTIMATED REMAINING USEFUL LIFE
+          </div>
+          <div class="rul-big-hours" id="rul-view-hours">42.7 HOURS</div>
+          <div class="rul-margin-label" id="rul-view-margin">± 5.2 Hours (95% CI)</div>
+          <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-top: 10px;">
+            Maintenance Intervention Threshold: <strong>60% Health</strong>
+          </div>
+        </div>
+
+        <div class="gcs-panel">
+          <div class="panel-header">
+            <span class="panel-title"><i class="fa-solid fa-calculator"></i> Wear Hazard Model</span>
+            <span class="panel-badge">WEIBULL 2-PARAM</span>
+          </div>
+          <div style="font-family: var(--font-mono); font-size: 11px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Shape Parameter (β):</span>
+              <span style="font-weight: 700; color: var(--text-primary);">2.42 (Wear-out Phase)</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Scale Parameter (η):</span>
+              <span style="font-weight: 700; color: var(--text-primary);">1,200 Flight Hours</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Accumulated TBO Time:</span>
+              <span style="font-weight: 700; color: var(--cyan-telemetry);">480.2 Flight Hours</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Degradation Rate:</span>
+              <span id="rul-degradation-rate" style="font-weight: 700; color: #f59e0b;">Accelerated (+0.14%/hr)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div class="gcs-panel chart-box-card">
+          <div class="panel-header" style="margin-bottom: 6px;">
+            <span class="panel-title"><i class="fa-solid fa-chart-area"></i> Health Degradation Trajectory & RUL Projection</span>
+            <span class="panel-badge">HISTORICAL vs PREDICTED</span>
+          </div>
+          <div style="position: relative; height: 260px; width: 100%;">
+            <canvas id="rul-chart-canvas"></canvas>
+          </div>
+        </div>
+
+        <div class="gcs-panel">
+          <div class="panel-header">
+            <span class="panel-title"><i class="fa-solid fa-layer-group"></i> Component-Wise Health Breakdown</span>
+            <span class="panel-badge">8 SUBSYSTEMS</span>
+          </div>
+          <table class="component-health-matrix-table">
+            <thead>
+              <tr>
+                <th>SUBSYSTEM</th>
+                <th>HEALTH</th>
+                <th>CONDITION</th>
+                <th>EST. REMAINING</th>
+                <th>MAINTENANCE PRIORITY</th>
+              </tr>
+            </thead>
+            <tbody id="component-health-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. VIEW: MISSION SIMULATOR -->
+    <section id="view-mission-simulator" class="view-section">
+      <div class="gcs-panel">
+        <div class="panel-header">
+          <span class="panel-title"><i class="fa-solid fa-sliders"></i> Flight Scenario Inputs</span>
+          <span class="panel-badge">MONTE CARLO ENGINE</span>
+        </div>
+
+        <div class="sim-preset-chips">
+          <button class="preset-chip-btn active" data-preset="high_altitude">High Altitude</button>
+          <button class="preset-chip-btn" data-preset="long_endurance">Long Endurance</button>
+          <button class="preset-chip-btn" data-preset="hot_weather">Hot Desert</button>
+          <button class="preset-chip-btn" data-preset="rapid_throttle">Rapid Throttle</button>
+        </div>
+
+        <div class="simulator-form-group">
+          <div class="sim-input-row">
+            <label>
+              <span>Flight Altitude:</span>
+              <strong id="lbl-sim-alt">18,200 ft</strong>
+            </label>
+            <input type="range" class="sim-slider" id="sim-alt" min="0" max="25000" step="500" value="18200">
+          </div>
+
+          <div class="sim-input-row">
+            <label>
+              <span>Ambient Temp (OAT):</span>
+              <strong id="lbl-sim-temp">42 °C</strong>
+            </label>
+            <input type="range" class="sim-slider" id="sim-temp" min="-40" max="50" step="1" value="42">
+          </div>
+
+          <div class="sim-input-row">
+            <label>
+              <span>Mission Duration:</span>
+              <strong id="lbl-sim-duration">8.5 Hours</strong>
+            </label>
+            <input type="range" class="sim-slider" id="sim-duration" min="1" max="14" step="0.5" value="8.5">
+          </div>
+
+          <div class="sim-input-row">
+            <label><span>Throttle Profile:</span></label>
+            <select class="hud-select" id="sim-throttle" style="width: 100%;">
+              <option value="loiter_65">Economic Loiter (65% MCP)</option>
+              <option value="cruise_75" selected>Standard Cruise (75% MCP)</option>
+              <option value="max_continuous_90">High Dash (90% MCP)</option>
+              <option value="tactical_variable">Tactical Variable (60% - 100%)</option>
+            </select>
+          </div>
+
+          <button class="btn-gcs btn-gcs-cyan" id="btn-run-simulation" style="justify-content: center; padding: 10px; margin-top: 8px;">
+            <i class="fa-solid fa-play"></i> RUN MISSION SIMULATION
+          </button>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+          <div class="metric-tile">
+            <span class="tile-label">Mission Risk</span>
+            <span class="tile-val" id="sim-result-risk" style="color: #f59e0b;">MEDIUM</span>
+            <span class="tile-desc" id="sim-result-risk-desc">Thermal Stress</span>
+          </div>
+          <div class="metric-tile">
+            <span class="tile-label">Projected CHT Peak</span>
+            <span class="tile-val" id="sim-result-cht">144.5 °C</span>
+            <span class="tile-desc">Normal limit: 145 °C</span>
+          </div>
+          <div class="metric-tile">
+            <span class="tile-label">Projected EGT Peak</span>
+            <span class="tile-val" id="sim-result-egt">728.0 °C</span>
+            <span class="tile-desc">Normal limit: 750 °C</span>
+          </div>
+          <div class="metric-tile">
+            <span class="tile-label">RUL Impact</span>
+            <span class="tile-val" id="sim-result-rul">11.2 h</span>
+            <span class="tile-desc">End Health: <span id="sim-result-end-health">78%</span></span>
+          </div>
+        </div>
+
+        <div class="gcs-panel" style="height: 280px; position: relative;">
+          <div class="panel-header" style="margin-bottom: 6px;">
+            <span class="panel-title"><i class="fa-solid fa-chart-line"></i> Projected Thermal & Health Curves Over Mission Duration</span>
+            <span class="panel-badge">HOURLY FORECAST</span>
+          </div>
+          <div style="position: relative; height: 210px; width: 100%;">
+            <canvas id="sim-chart-canvas"></canvas>
+          </div>
+        </div>
+
+        <div class="gcs-panel">
+          <div class="panel-header">
+            <span class="panel-title"><i class="fa-solid fa-lightbulb"></i> AI Tactical Recommendation</span>
+            <button class="btn-gcs btn-gcs-demo" id="btn-apply-sim-twin">
+              <i class="fa-solid fa-cube"></i> Apply Stress to 3D Digital Twin
+            </button>
+          </div>
+          <div style="font-size: 13px; color: #e2e8f0; line-height: 1.4;" id="sim-recommendation-box">
+            Review cooling/lubrication condition before mission. Limit high dash throttle duration.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. VIEW: MISSION REPLAY -->
+    <section id="view-mission-replay" class="view-section">
+      <div class="replay-player-deck">
+        <div class="replay-controls-bar">
+          <div class="replay-transport-btns">
+            <button class="btn-gcs btn-gcs-cyan" id="btn-replay-play">
+              <i class="fa-solid fa-play" id="replay-play-icon"></i> PLAY REPLAY
+            </button>
+            <button class="btn-gcs" id="btn-replay-reset">
+              <i class="fa-solid fa-backward-step"></i> Reset (00:00)
+            </button>
+          </div>
+
+          <div style="font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--cyan-telemetry);" id="replay-time-display">
+            03:42:18 / 07:30:00
+          </div>
+
+          <div class="replay-speed-selector">
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-right: 4px;">SPEED:</span>
+            <button class="speed-btn active" data-speed="1">1x</button>
+            <button class="speed-btn" data-speed="2">2x</button>
+            <button class="speed-btn" data-speed="5">5x</button>
+            <button class="speed-btn" data-speed="10">10x</button>
+          </div>
+        </div>
+
+        <div class="replay-timeline-wrapper">
+          <input type="range" class="replay-timeline-slider" id="replay-slider" min="0" max="27000" step="10" value="13338">
+          <div class="replay-bookmarks-row">
+            <span>00:00 Takeoff</span>
+            <span>01:15 FL160</span>
+            <span style="color: var(--status-warning);">03:42 Vibration Onset</span>
+            <span style="color: var(--status-warning);">04:15 AI Flag</span>
+            <span style="color: var(--status-critical);">05:10 Thermal Disparity</span>
+            <span style="color: var(--status-critical);">06:05 RTB Commanded</span>
+            <span>07:15 Landing</span>
+          </div>
+        </div>
+
+        <div id="replay-event-banner" style="background: rgba(0,240,255,0.06); border: 1px solid var(--border-active); border-radius: 6px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <div style="font-family: var(--font-subheading); font-size: 14px; font-weight: 700; color: var(--text-primary);" id="replay-banner-title">
+              Incipient Micro-Vibration Inception
+            </div>
+            <div style="font-size: 11px; color: var(--text-secondary);" id="replay-banner-desc">
+              Subtle acoustic frequency shift in Fuel Rail #2. Gross limits normal.
+            </div>
+          </div>
+          <div class="panel-badge badge-warning" id="replay-banner-badge">WARNING</div>
+        </div>
+      </div>
+
+      <div style="flex: 1; display: grid; grid-template-columns: 320px 1fr; gap: 14px; min-height: 0;">
+        <div class="gcs-panel" style="overflow-y: auto;">
+          <div class="panel-header">
+            <span class="panel-title"><i class="fa-solid fa-clock"></i> Recorded Telemetry</span>
+            <span class="panel-badge">BLACK BOX</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-family: var(--font-mono); font-size: 12px;">
+            <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <span style="color: var(--text-muted);">Engine Health:</span>
+              <strong id="rep-health" style="color: #f59e0b;">87.0%</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <span style="color: var(--text-muted);">Anomaly Score:</span>
+              <strong id="rep-anomaly" style="color: #f59e0b;">0.68</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <span style="color: var(--text-muted);">Engine Speed:</span>
+              <strong id="rep-rpm">5180 RPM</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <span style="color: var(--text-muted);">Cylinder Head Temp:</span>
+              <strong id="rep-cht">142.0 °C</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <span style="color: var(--text-muted);">Exhaust Gas Temp:</span>
+              <strong id="rep-egt">715.0 °C</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <span style="color: var(--text-muted);">Fuel Flow:</span>
+              <strong id="rep-fuel">23.6 L/h</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <span style="color: var(--text-muted);">Vibration RMS:</span>
+              <strong id="rep-vib">0.38 g</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="gcs-panel" style="position: relative; overflow: hidden; padding: 0;">
+          <div id="replay-twin-mount" style="width: 100%; height: 100%;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. VIEW: MAINTENANCE CENTER -->
+    <section id="view-maintenance-center" class="view-section">
+      <div class="panel-header" style="margin-bottom: 0;">
+        <div>
+          <span class="panel-title" style="font-size: 16px;"><i class="fa-solid fa-screwdriver-wrench"></i> Predictive Maintenance & Technical Overhaul Center</span>
+          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+            AI-Driven Prognostics to Service Window Mapping for Rotax 914 MALE UAV Operations
+          </div>
+        </div>
+        <div class="panel-badge">AEROSPACE DEFENCE PROTOCOL</div>
+      </div>
+
+      <div class="maintenance-cards-grid" id="maintenance-cards-container"></div>
+    </section>
+
+  </main>
+
+  <!-- =====================================================================
+       FAULT SCENARIO SELECTION MODAL
+       ===================================================================== -->
+  <div class="gcs-modal-backdrop" id="fault-modal-backdrop">
+    <div class="gcs-modal">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-triangle-exclamation" style="color: var(--status-critical);"></i>
+          INJECT PROGRESSIVE ENGINE FAULT
+        </div>
+        <button class="btn-icon-only" id="btn-close-fault-modal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">
+          Select a fault scenario to simulate realistic coupled thermodynamic degradation across the Rotax 914 engine twin:
+        </div>
+        <div class="fault-grid">
+          <button class="fault-card-btn" data-fault="injector_abnormality">
+            <span class="fault-cat">Fuel & Combustion</span>
+            <span class="fault-name">Injector Abnormality <i class="fa-solid fa-chevron-right"></i></span>
+            <span class="fault-desc">Fuel flow drops, Cylinder #2 EGT climbs sharply, vibration increases due to torque ripple.</span>
+          </button>
+
+          <button class="fault-card-btn" data-fault="overheating">
+            <span class="fault-cat">Thermal Management</span>
+            <span class="fault-name">Thermal Overheating <i class="fa-solid fa-chevron-right"></i></span>
+            <span class="fault-desc">Coolant radiator saturation: CHT climbs >155°C, oil temp rises, oil pressure drops.</span>
+          </button>
+
+          <button class="fault-card-btn" data-fault="lubrication_issue">
+            <span class="fault-cat">Tribology & Lube</span>
+            <span class="fault-name">Lubrication Breakdown <i class="fa-solid fa-chevron-right"></i></span>
+            <span class="fault-desc">Main oil gallery pressure drops to 1.8 bar, severe bearing friction temperature spike.</span>
+          </button>
+
+          <button class="fault-card-btn" data-fault="abnormal_vibration">
+            <span class="fault-cat">Mechanical Dynamics</span>
+            <span class="fault-name">Mechanical Unbalance <i class="fa-solid fa-chevron-right"></i></span>
+            <span class="fault-desc">Broadband vibration spikes to 5.8 mm/s originating from propeller reduction gear lash.</span>
+          </button>
+
+          <button class="fault-card-btn" data-fault="sensor_drift">
+            <span class="fault-cat">Instrumentation</span>
+            <span class="fault-name">CHT Sensor Drift <i class="fa-solid fa-chevron-right"></i></span>
+            <span class="fault-desc">Thermocouple drifts +32°C while thermodynamics remain nominal; AI flags sensor anomaly.</span>
+          </button>
+
+          <button class="fault-card-btn" data-fault="combustion_instability">
+            <span class="fault-cat">Ignition & Timing</span>
+            <span class="fault-name">Combustion Instability <i class="fa-solid fa-chevron-right"></i></span>
+            <span class="fault-desc">Cyclic EGT oscillations and ignition timing jitter indicating intermittent spark misfire.</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       PRINTABLE WORK ORDER MODAL
+       ===================================================================== -->
+  <div class="gcs-modal-backdrop" id="wo-modal-backdrop">
+    <div class="gcs-modal" style="max-width: 820px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-print"></i> GCS TECHNICAL WORK ORDER
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-gcs btn-gcs-cyan" onclick="window.print()"><i class="fa-solid fa-print"></i> Print / Export PDF</button>
+          <button class="btn-icon-only" id="btn-close-wo-modal"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+      <div class="modal-body" id="wo-modal-content"></div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MATHEMATICAL ACCURACY & MODEL BENCHMARK SUITE MODAL
+       ===================================================================== -->
+  <div class="gcs-modal-backdrop" id="math-accuracy-modal-backdrop">
+    <div class="gcs-modal" style="max-width: 960px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa-solid fa-square-root-variable" style="color: var(--cyan-telemetry);"></i>
+          MATHEMATICAL ACCURACY & NASA C-MAPSS BENCHMARK SUITE
+        </div>
+        <button class="btn-icon-only" id="btn-close-math-modal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+        
+        <!-- Subtitle & Overview -->
+        <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+          Quantitative mathematical accuracy, error distribution, and formulation reference for the multi-model AI pipeline powering the GARUDAVYUHA Digital Twin (Rotax 914 F/UL engine).
+        </div>
+
+        <!-- 6 KPI Metric Cards -->
+        <div class="math-kpi-grid">
+          <div class="math-kpi-card">
+            <div class="kpi-label">RUL MAE (MEAN ABSOLUTE ERROR)</div>
+            <div class="kpi-val cyan" id="bench-mae">5.4 hrs</div>
+            <div class="kpi-sub">Target: &le; 6.0 hrs | Passed &check;</div>
+          </div>
+          <div class="math-kpi-card">
+            <div class="kpi-label">RMSE (ROOT MEAN SQ ERROR)</div>
+            <div class="kpi-val cyan" id="bench-rmse">6.8 hrs</div>
+            <div class="kpi-sub">Target: &le; 8.5 hrs | Passed &check;</div>
+          </div>
+          <div class="math-kpi-card">
+            <div class="kpi-label">DEGRADATION FIT (R&sup2; SCORE)</div>
+            <div class="kpi-val green" id="bench-r2">0.976</div>
+            <div class="kpi-sub">Coefficient of Determination</div>
+          </div>
+          <div class="math-kpi-card">
+            <div class="kpi-label">NASA PHM'08 SCORE</div>
+            <div class="kpi-val yellow" id="bench-phm">18.4</div>
+            <div class="kpi-sub">Asymmetric Penalty (Lower is better)</div>
+          </div>
+          <div class="math-kpi-card">
+            <div class="kpi-label">DESERT FALSE ALARM RATE</div>
+            <div class="kpi-val green" id="bench-far">0.32%</div>
+            <div class="kpi-sub">At 45&deg;C Ambient (Target: &lt; 0.8%)</div>
+          </div>
+          <div class="math-kpi-card">
+            <div class="kpi-label">FAULT CLASSIFICATION ACCURACY</div>
+            <div class="kpi-val green" id="bench-acc">98.4%</div>
+            <div class="kpi-sub">ROC-AUC: 0.984 | F1: 97.9%</div>
+          </div>
+        </div>
+
+        <!-- Mathematical Formulations Section -->
+        <div class="gcs-panel" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(0, 240, 255, 0.2);">
+          <div class="panel-header" style="margin-bottom: 12px;">
+            <span class="panel-title"><i class="fa-solid fa-square-root-variable"></i> Core Mathematical Formulations</span>
+            <span class="panel-badge">THEORETICAL FRAMEWORK</span>
+          </div>
+
+          <div class="formula-list" style="display: flex; flex-direction: column; gap: 14px;">
+            
+            <!-- 1. Weibull Model -->
+            <div class="formula-box">
+              <div class="formula-title">1. Weibull 2-Parameter Cumulative Failure Hazard & RUL Decay</div>
+              <div class="formula-math">
+                $$h(t) = \frac{\beta}{\eta} \left(\frac{t}{\eta}\right)^{\beta-1}, \qquad h_{\text{decay}}(t) = 1 - \exp(a \cdot d - b \cdot t^c)$$
+              </div>
+              <div class="formula-desc">
+                Models engine wear-out phase where shape parameter &beta; = 2.42 (&gt; 1 indicates wear-out) and scale parameter &eta; = 1,200 flight hours to Time Between Overhauls (TBO).
+              </div>
+            </div>
+
+            <!-- 2. NASA PHM'08 Loss -->
+            <div class="formula-box">
+              <div class="formula-title">2. NASA PHM'08 Asymmetric Prognostics Scoring Function</div>
+              <div class="formula-math">
+                $$S = \sum_{i=1}^N \begin{cases} \exp\left(-\frac{d_i}{10}\right) - 1 & \text{if } d_i < 0 \text{ (early RUL prediction)} \\[6pt] \exp\left(\frac{d_i}{13}\right) - 1 & \text{if } d_i \ge 0 \text{ (late RUL prediction)} \end{cases}$$
+              </div>
+              <div class="formula-desc">
+                Heavily penalizes late RUL predictions ($d_i \ge 0$) to prevent catastrophic engine in-flight failures while favoring conservative early warnings.
+              </div>
+            </div>
+
+            <!-- 3. Ideal Gas Limit -->
+            <div class="formula-box">
+              <div class="formula-title">3. Dynamic Environment-Corrected Thermal Limit (Ideal Gas Correction)</div>
+              <div class="formula-math">
+                $$T_{\text{dynamic}} = T_{\text{nominal}} + \alpha \cdot \left( \frac{T_{\text{ambient}} - 15^\circ\text{C}}{1.5} \right)$$
+              </div>
+              <div class="formula-desc">
+                Prevents false temperature alarms under extreme desert operations (up to 50&deg;C ambient) by dynamically expanding maximum allowable CHT thresholds.
+              </div>
+            </div>
+
+            <!-- 4. Isolation Forest -->
+            <div class="formula-box">
+              <div class="formula-title">4. Isolation Forest Normalized Anomaly Scoring</div>
+              <div class="formula-math">
+                $$s(x, n) = 2^{-\frac{E(h(x))}{c(n)}}, \qquad c(n) = 2 \ln(n - 1) + 0.5772156649 - \frac{2(n-1)}{n}$$
+              </div>
+              <div class="formula-desc">
+                Evaluates path lengths $h(x)$ across 50 isolation trees over 9 telemetry features. $s \to 1$ signifies structural thermodynamic anomaly.
+              </div>
+            </div>
+
+            <!-- 5. SHAP -->
+            <div class="formula-box">
+              <div class="formula-title">5. Shapley Additive exPlanations (SHAP) Parameter Attribution</div>
+              <div class="formula-math">
+                $$\phi_i(v) = \sum_{S \subseteq N \setminus \{i\}} \frac{|S|!(|N|-|S|-1)!}{|N|!} \Big(v(S \cup \{i\}) - v(S)\Big)$$
+              </div>
+              <div class="formula-desc">
+                Calculates exact marginal contributions of each sensor channel (RPM, CHT, EGT, Vibration) to overall AI anomaly scores for explainable AI (XAI).
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Live Benchmark Execution Controller -->
+        <div class="gcs-panel">
+          <div class="panel-header" style="margin-bottom: 10px;">
+            <span class="panel-title"><i class="fa-solid fa-vial"></i> Interactive NASA C-MAPSS Run-to-Failure Benchmark Suite</span>
+            <span class="panel-badge">100 SYNTHETIC UNITS</span>
+          </div>
+          
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <button class="btn-gcs btn-gcs-cyan" id="btn-run-live-benchmark" style="padding: 10px 18px; font-weight: 700;">
+              <i class="fa-solid fa-play"></i> RUN NASA C-MAPSS LIVE BENCHMARK
+            </button>
+            <span style="font-size: 11px; color: var(--text-muted);" id="benchmark-status-text">
+              Ready to evaluate 100 engine run-to-failure units.
+            </span>
+          </div>
+
+          <div id="benchmark-log-container" style="margin-top: 12px; padding: 10px; background: #090d16; border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; font-family: var(--font-mono); font-size: 11px; color: #38bdf8; max-height: 120px; overflow-y: auto;">
+            [GARUDAVYUHA Benchmark Engine] Click button above to initiate 100-unit prognostics validation suite...
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Application Script (Python / Brython) -->
+  <script type="text/python" src="py/app.py"></script>
+</body>
+</html>
+

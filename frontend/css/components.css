@@ -1,0 +1,661 @@
+/* ==========================================================================
+   GARUDAVYUHA – REUSABLE GCS COMPONENTS (MATCHING REFERENCE IMAGE)
+   ========================================================================== */
+
+/* 1. KEY-VALUE LIST (MISSION OVERVIEW) */
+.key-value-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.kv-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.kv-key {
+  color: var(--text-muted);
+}
+
+.kv-val {
+  color: var(--text-white);
+  font-weight: 600;
+}
+
+.kv-val.status-green {
+  color: var(--color-green);
+}
+
+/* 2. ENGINE HEALTH RADIAL GAUGE */
+.health-radial-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 0;
+}
+
+.radial-ring-wrap {
+  position: relative;
+  width: 78px;
+  height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.radial-svg {
+  width: 78px;
+  height: 78px;
+  transform: rotate(-90deg);
+}
+
+.radial-bg {
+  fill: none;
+  stroke: #162235;
+  stroke-width: 7;
+}
+
+.radial-meter {
+  fill: none;
+  stroke: var(--color-green);
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-dasharray: 251.3; /* 2 * PI * 40 */
+  stroke-dashoffset: 32.6; /* 87% filled */
+  transition: stroke-dashoffset 0.4s ease, stroke 0.4s ease;
+  filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.4));
+}
+
+.radial-text {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+}
+
+.radial-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.health-status-label {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--color-green);
+}
+
+.health-conf-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* 3. MISSION READINESS */
+.readiness-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.readiness-top {
+  display: flex;
+  justify-content: space-between;
+}
+
+.readiness-num {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 6px;
+  background: #162235;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--color-green);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.readiness-risk-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-green);
+  font-weight: 600;
+}
+
+/* 4. ESTIMATED RUL */
+.rul-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rul-number-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.rul-hours {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.rul-unit {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.rul-sub-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.rul-margin {
+  color: var(--text-muted);
+}
+
+.rul-badge {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* 5. ACTIVE ALERTS */
+.alert-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.alert-item.warning i {
+  color: var(--color-yellow);
+  font-size: 12px;
+  margin-top: 1px;
+}
+.alert-item.info i {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 1px;
+}
+
+.alert-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.alert-title {
+  color: #e2e8f0;
+}
+
+.alert-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* 6. RIGHT PANEL: 3x3 LIVE SENSOR CARDS */
+.sensor-grid-3x3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.sensor-item-card {
+  background: #0d1527;
+  border: 1px solid #162235;
+  border-radius: 5px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.sc-title {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-gray);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.sc-value {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  margin-top: 2px;
+  line-height: 1.1;
+}
+
+.sc-unit {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+.sc-sparkline {
+  width: 100%;
+  height: 22px;
+  margin-top: 4px;
+}
+
+/* Telemetry Stream Banner */
+.stream-banner {
+  background: #0d1527;
+  border: 1px solid #162235;
+  border-radius: 5px;
+  padding: 8px 10px;
+  margin-top: auto;
+}
+
+.stream-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.stream-rate {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-green);
+}
+
+#telemetry-stream-canvas {
+  width: 100%;
+  height: 34px;
+  display: block;
+}
+
+/* 7. BOTTOM 5 TELEMETRY GRAPHS */
+.bottom-graphs-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr) 220px;
+  gap: 8px;
+}
+
+.gcs-graph-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  height: 120px;
+}
+
+.graph-box-header {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-gray);
+  margin-bottom: 4px;
+}
+
+.graph-box-val {
+  color: #fff;
+  font-weight: 700;
+}
+
+.canvas-wrap {
+  flex: 1;
+  position: relative;
+  width: 100%;
+}
+
+.canvas-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+/* EVENT TIMELINE BOX */
+.gcs-timeline-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  height: 120px;
+}
+
+.timeline-header-clean {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-gray);
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+}
+
+.timeline-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tl-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  line-height: 1.2;
+}
+.tl-row.warning i { color: var(--color-yellow); }
+.tl-row.healthy i { color: var(--color-green); }
+
+.tl-time {
+  color: var(--text-muted);
+}
+.tl-desc {
+  color: #cbd5e1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tl-footer-btn {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-cyan);
+  text-align: center;
+  margin-top: 4px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+
+/* 8. BOTTOM ACTION ROW */
+.bottom-action-row {
+  display: grid;
+  grid-template-columns: 340px 1fr 340px;
+  gap: 8px;
+}
+
+.ai-diag-summary-card .diag-summary-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.diag-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.diag-label {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.diag-score-val {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.diag-bar-track {
+  width: 90px;
+  height: 5px;
+  background: #162235;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.diag-bar-fill {
+  height: 100%;
+  background: var(--color-yellow);
+}
+
+.diag-fault-name {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+}
+.diag-fault-name.red { color: #f87171; }
+
+.diag-conf-dial-wrap {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.diag-conf-svg {
+  width: 48px;
+  height: 48px;
+  transform: rotate(-90deg);
+}
+
+.conf-bg {
+  fill: none;
+  stroke: #162235;
+  stroke-width: 5;
+}
+
+.conf-meter {
+  fill: none;
+  stroke: var(--color-yellow);
+  stroke-width: 5;
+  stroke-dasharray: 150.8;
+  stroke-linecap: round;
+}
+
+.conf-percent {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.diag-severity-val {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+}
+.diag-severity-val.yellow { color: var(--color-yellow); }
+
+/* Recommended Action */
+.rec-action-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rec-action-text {
+  font-size: 11px;
+  color: #cbd5e1;
+  line-height: 1.35;
+}
+
+.btn-rec-diagnostics {
+  background: transparent;
+  border: 1px solid var(--border-card);
+  color: var(--color-cyan);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-rec-diagnostics:hover {
+  background: rgba(0, 240, 255, 0.1);
+  border-color: var(--color-cyan);
+}
+
+/* Quick Actions */
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.qa-btn {
+  background: #0d1527;
+  border: 1px solid var(--border-card);
+  border-radius: 4px;
+  color: #e2e8f0;
+  padding: 6px 8px;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.qa-btn:hover {
+  border-color: var(--color-cyan);
+  color: #fff;
+  background: rgba(0, 240, 255, 0.08);
+}
+
+.bottom-disclaimer {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 4px 0;
+}
+
+/* ==========================================================================
+   MATHEMATICAL ACCURACY MODAL & FORMULATIONS
+   ========================================================================== */
+.math-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.math-kpi-card {
+  background: rgba(13, 21, 39, 0.85);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kpi-label {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.kpi-val {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.kpi-val.cyan { color: var(--cyan-telemetry, #00f0ff); }
+.kpi-val.green { color: #10b981; }
+.kpi-val.yellow { color: #f59e0b; }
+
+.kpi-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.formula-box {
+  background: rgba(10, 15, 26, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 14px;
+}
+
+.formula-title {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-bottom: 8px;
+}
+
+.formula-math {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: #f8fafc;
+  background: rgba(0, 0, 0, 0.4);
+  border-left: 3px solid var(--cyan-telemetry, #00f0ff);
+  padding: 8px 12px;
+  margin: 6px 0;
+  overflow-x: auto;
+}
+
+.formula-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+  margin-top: 6px;
+}
+

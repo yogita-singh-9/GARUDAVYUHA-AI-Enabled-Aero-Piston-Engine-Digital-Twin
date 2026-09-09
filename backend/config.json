@@ -1,0 +1,67 @@
+{
+  "active_engine": "rotax_914",
+  "engines": {
+    "rotax_914": {
+      "display_name": "Rotax 914 (Aero-Piston, Current Proxy)",
+      "displacement_l": 1.2,
+      "cylinders": 4,
+      "layout": "flat_boxer",
+      "vibration_harmonic_factor": 1.0,
+      "max_rpm": 5800,
+      "nominal_rpm": 5000,
+      "nominal_cht_c": 115,
+      "nominal_egt_c": 820,
+      "egt_limit_c": 900,
+      "nominal_vibration_g": 1.2,
+      "nominal_fuel_flow_lph": 24.6,
+      "nominal_oil_bar": 4.2,
+      "thermal_limit_base_c": 120,
+      "t_std_c": 15,
+      "alpha_thermal": 1.0,
+      "weibull_shape": 2.42,
+      "weibull_scale": 1280.0
+    },
+    "vrde_tapas": {
+      "display_name": "VRDE Diesel (DRDO TAPAS, Indigenous Target)",
+      "displacement_l": 2.0,
+      "cylinders": 4,
+      "layout": "inline",
+      "vibration_harmonic_factor": 2.0,
+      "max_rpm": 4500,
+      "nominal_rpm": 3800,
+      "nominal_cht_c": 98,
+      "nominal_egt_c": 650,
+      "egt_limit_c": 720,
+      "nominal_vibration_g": 1.0,
+      "nominal_fuel_flow_lph": 18.5,
+      "nominal_oil_bar": 4.6,
+      "thermal_limit_base_c": 95,
+      "t_std_c": 15,
+      "alpha_thermal": 1.0,
+      "weibull_shape": 2.2,
+      "weibull_scale": 1450.0
+    }
+  },
+  "network": {
+    "layer1_command_udp_port": 9998,
+    "layer2_telemetry_udp_port": 9999,
+    "layer2_host": "127.0.0.1",
+    "layer2_ws_port": 8000
+  },
+  "sampling": {
+    "physics_loop_seconds": 0.5,
+    "vibration_sensor_hz": 500
+  },
+  "security": {
+    "secret_key_hex": "94c9568d793ffd726cdfd88b4b7d1bf0a4d15afc2c8ffd598c1e01a18550c632"
+  },
+  "isolation_forest": {
+    "contamination": 0.01,
+    "n_estimators": 150,
+    "random_state": 42
+  },
+  "baseline_dataset": {
+    "seconds_of_healthy_flight": 180,
+    "output_csv": "baseline_healthy_dataset.csv"
+  }
+}

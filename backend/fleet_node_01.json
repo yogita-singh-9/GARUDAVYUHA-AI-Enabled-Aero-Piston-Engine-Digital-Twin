@@ -1,0 +1,25 @@
+{
+  "node_id": "fleet_node_01",
+  "engine": "rotax_914",
+  "contamination": 0.01,
+  "n_estimators": 150,
+  "baseline_mean": {
+    "rpm": 0.44276131557836795,
+    "cht": -0.006876109763684034,
+    "egt": 0.11184039103267765,
+    "fuel_flow": -0.02558349881892078,
+    "oil_pressure": -0.0013366450028336585,
+    "vibration": -0.29809371046961286
+  },
+  "baseline_std": {
+    "rpm": 12.257708017323598,
+    "cht": 0.31075722589944343,
+    "egt": 2.0882526361775504,
+    "fuel_flow": 0.4386617869452736,
+    "oil_pressure": 0.04720101364095742,
+    "vibration": 0.06628027514287198
+  },
+  "weibull_shape": 2.42,
+  "weibull_scale": 1280.0,
+  "exported_at": 1788619167.1399093
+}
