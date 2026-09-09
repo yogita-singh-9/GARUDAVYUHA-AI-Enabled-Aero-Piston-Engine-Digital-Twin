@@ -25,21 +25,6 @@ class MissionReplay:
         self.csvFrames = []
         self.useCSVData = False
 
-    def loadFromCSV(self, csv_filepath):
-        try:
-            import csv
-            if os.path.exists(csv_filepath):
-                with open(csv_filepath, mode='r', encoding='utf-8') as f:
-                    reader = csv.DictReader(f)
-                    self.csvFrames = list(reader)
-                    if self.csvFrames:
-                        self.useCSVData = True
-                        print(f"[GARUDAVYUHA Replay] Loaded {len(self.csvFrames)} frames from {csv_filepath}")
-                        return True
-        except Exception as err:
-            print("[GARUDAVYUHA Replay] CSV read error:", err)
-        return False
-
         # Key historical mission events
         self.events = [
             {
@@ -83,7 +68,7 @@ class MissionReplay:
                 "formattedTime": "05:10:00",
                 "title": "Injector Disparity & Thermal Spike",
                 "type": "critical",
-                "description": "Cylinder #2 EGT climbs to 788°C. Lean burn verified. Fuel Injector highlighted in Red.",
+                "description": "Cylinder #2 EGT climbs to 788\u00b0C. Lean burn verified. Fuel Injector highlighted in Red.",
                 "subsystem": "fuel_system",
                 "status": "critical",
             },
@@ -107,7 +92,23 @@ class MissionReplay:
             },
         ]
 
+    def loadFromCSV(self, csv_filepath):
+        try:
+            import csv, os
+            if os.path.exists(csv_filepath):
+                with open(csv_filepath, mode='r', encoding='utf-8') as f:
+                    reader = csv.DictReader(f)
+                    self.csvFrames = list(reader)
+                    if self.csvFrames:
+                        self.useCSVData = True
+                        print(f"[GARUDAVYUHA Replay] Loaded {len(self.csvFrames)} frames from {csv_filepath}")
+                        return True
+        except Exception as err:
+            print("[GARUDAVYUHA Replay] CSV read error:", err)
+        return False
+
     def play(self):
+
         if self.isPlaying:
             return
         self.isPlaying = True
