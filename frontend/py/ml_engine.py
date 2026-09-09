@@ -419,7 +419,7 @@ def run_test_evaluation(verbose: bool = True) -> dict:
         }
         if verbose:
             print()
-            print(f"  ─" * 33)
+            print(f"  " + "-" * 60)
             print(f"  OVERALL ({n} engines across all 4 datasets):")
             print(f"    MAE    = {overall['mae']:.2f} hours")
             print(f"    RMSE   = {overall['rmse']:.2f} hours")
@@ -658,7 +658,7 @@ def _run_monitor():
     print("  Press Ctrl+C to stop")
     print("=" * 66)
     print(f"  {'Time':>8}  {'Score':>7}  {'RUL(h)':>7}  {'Latency':>8}  {'Status':>10}  Engine")
-    print("  " + "─" * 60)
+    print("  " + "-" * 60)
     try:
         while True:
             engine.tick()
