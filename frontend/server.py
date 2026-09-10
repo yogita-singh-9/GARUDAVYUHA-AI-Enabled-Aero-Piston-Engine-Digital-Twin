@@ -162,7 +162,7 @@ def run_server(port=DEFAULT_PORT, open_browser=True):
             print("  Ground Control Station Server Online")
             print(f"  URL: {url}")
             print(f"  Root: {os.getcwd()}")
-            print(f"  ML Backend Proxy: {BACKEND_URL} → /api/* /ws/*")
+            print(f"  ML Backend Proxy: {BACKEND_URL} -> /api/* /ws/*")
             print(f"  RequestHandler: {handler.__name__}")
             print("  Press Ctrl+C to terminate server")
             print("=" * 70)

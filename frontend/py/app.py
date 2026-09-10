@@ -891,16 +891,37 @@ class App:
                         'label': 'Historical Health',
                         'data': curve_data.get('historicalData', []),
                         'borderColor': '#00f0ff',
-                        'borderWidth': 2,
-                        'tension': 0.2,
+                        'backgroundColor': 'rgba(0, 240, 255, 0.08)',
+                        'borderWidth': 2.5,
+                        'tension': 0.3,
+                        'pointRadius': 3,
+                        'pointBackgroundColor': '#00f0ff',
+                        'fill': False,
+                        'spanGaps': False,
                     },
                     {
                         'label': 'Projected Degradation',
                         'data': curve_data.get('predictedMean', []),
                         'borderColor': '#f59e0b',
+                        'backgroundColor': 'rgba(245, 158, 11, 0.06)',
                         'borderWidth': 2,
-                        'borderDash': [4, 4],
+                        'borderDash': [5, 4],
                         'tension': 0.3,
+                        'pointRadius': 2,
+                        'pointBackgroundColor': '#f59e0b',
+                        'fill': False,
+                        'spanGaps': False,
+                    },
+                    {
+                        'label': 'Maintenance Threshold',
+                        'data': curve_data.get('thresholdLine', []),
+                        'borderColor': 'rgba(239, 68, 68, 0.5)',
+                        'borderWidth': 1,
+                        'borderDash': [3, 3],
+                        'tension': 0,
+                        'pointRadius': 0,
+                        'fill': False,
+                        'spanGaps': True,
                     },
                 ],
             },
@@ -908,16 +929,56 @@ class App:
                 'responsive': True,
                 'maintainAspectRatio': False,
                 'animation': False,
+                'interaction': {
+                    'mode': 'index',
+                    'intersect': False,
+                },
+                'plugins': {
+                    'legend': {
+                        'display': True,
+                        'position': 'top',
+                        'labels': {
+                            'color': '#94a3b8',
+                            'font': {'size': 10, 'family': 'JetBrains Mono'},
+                            'boxWidth': 20,
+                            'padding': 10,
+                            'usePointStyle': True,
+                        },
+                    },
+                    'tooltip': {
+                        'backgroundColor': 'rgba(10,16,29,0.95)',
+                        'borderColor': 'rgba(0,240,255,0.3)',
+                        'borderWidth': 1,
+                        'titleColor': '#00f0ff',
+                        'bodyColor': '#e2e8f0',
+                    },
+                },
                 'scales': {
                     'y': {
                         'min': 0,
                         'max': 100,
-                        'ticks': {'color': '#94a3b8'},
-                        'grid': {'color': 'rgba(255,255,255,0.05)'},
+                        'ticks': {
+                            'color': '#64748b',
+                            'font': {'size': 10},
+                            'stepSize': 10,
+                        },
+                        'grid': {'color': 'rgba(255,255,255,0.04)'},
+                        'border': {'color': 'rgba(255,255,255,0.08)'},
+                        'title': {
+                            'display': True,
+                            'text': 'Health %',
+                            'color': '#64748b',
+                            'font': {'size': 10},
+                        },
                     },
                     'x': {
-                        'ticks': {'color': '#94a3b8'},
+                        'ticks': {
+                            'color': '#64748b',
+                            'font': {'size': 9},
+                            'maxRotation': 0,
+                        },
                         'grid': {'color': 'rgba(255,255,255,0.03)'},
+                        'border': {'color': 'rgba(255,255,255,0.08)'},
                     },
                 },
             },
@@ -1203,39 +1264,132 @@ class App:
         """Backward compatibility alias for handleReplayFrameUpdate."""
         self.handleReplayFrameUpdate(frame)
 
+
+
     def updateMaintenanceView(self, snapshot):
         container = document.getElementById('maintenance-cards-container')
         if not container:
             return
         subs = snapshot.get("subsystems", {}) if isinstance(snapshot, dict) else {}
+        rul_hours = float(snapshot.get('predictedRUL', 48.5))
+        rul_ci = float(snapshot.get('rulCI', 5.2))
+        health = float(snapshot.get('health', 98.4))
+        anomaly_score = float(snapshot.get('anomalyScore', 0.04))
+
+        # Update header stats
+        maint_rul = document.getElementById('maint-rul-display')
+        if maint_rul:
+            maint_rul.textContent = f"{rul_hours:.1f} hrs"
+            maint_rul.style.color = '#ef4444' if rul_hours < 20 else ('#f59e0b' if rul_hours < 50 else '#10b981')
+        maint_health = document.getElementById('maint-health-display')
+        if maint_health:
+            maint_health.textContent = f"{health:.1f}%"
+            maint_health.style.color = '#ef4444' if health < 50 else ('#f59e0b' if health < 80 else '#10b981')
+        maint_anom = document.getElementById('maint-anomaly-display')
+        if maint_anom:
+            maint_anom.textContent = f"{anomaly_score:.3f}"
+            maint_anom.style.color = '#ef4444' if anomaly_score > 0.6 else ('#f59e0b' if anomaly_score > 0.25 else '#10b981')
+        maint_ready = document.getElementById('maint-readiness-display')
+        if maint_ready:
+            post_ready = min(99.5, health + (100 - health) * 0.8) if health < 95 else 97.5
+            maint_ready.textContent = f"{post_ready:.1f}%"
+
         orders = self.maintenanceCenter.getWorkOrders(subs)
         container.innerHTML = ''
         for wo in orders:
             if not isinstance(wo, dict):
                 continue
+            health = float(wo.get('health', 97))
+            status_str = str(wo.get('status', 'SCHEDULED PREVENTIVE'))
+            priority_str = str(wo.get('priority', 'ROUTINE'))
+            is_critical = 'CRITICAL' in status_str
+            is_warning = 'MAINTENANCE' in status_str
+            # color coding
+            h_color = '#ef4444' if health < 40 else ('#f59e0b' if health < 80 else '#10b981')
+            p_color = '#ef4444' if is_critical else ('#f59e0b' if is_warning else '#00f0ff')
+            s_color = '#ef4444' if is_critical else ('#f59e0b' if is_warning else '#94a3b8')
+            badge_bg = 'rgba(239,68,68,0.12)' if is_critical else ('rgba(245,158,11,0.12)' if is_warning else 'rgba(0,240,255,0.08)')
+            # health bar fill width
+            bar_w = max(5, min(100, int(health)))
+
             card = document.createElement('div')
-            crit_cls = 'critical' if wo.get('status') == 'CRITICAL' else ''
-            card.className = f"work-order-card {crit_cls}"
+            border_color = 'rgba(239,68,68,0.5)' if is_critical else ('rgba(245,158,11,0.35)' if is_warning else 'rgba(0,240,255,0.2)')
+            card.style.cssText = (
+                f"background: #0a101d; border: 1px solid {border_color}; border-radius: 8px; "
+                f"padding: 14px; display: flex; flex-direction: column; gap: 10px; "
+                f"box-shadow: 0 2px 12px rgba(0,0,0,0.3);"
+            )
             card.innerHTML = f"""
-              <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px;">
-                <span>{wo.get('id', 'WO-000')}</span>
-                <span style="color: #ef4444; font-weight: bold;">{wo.get('status', 'NORMAL')}</span>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-family: var(--font-mono); font-size: 10px; color: var(--text-muted);">{wo.get('id', 'WO-000')}</span>
+                <span style="font-family: var(--font-heading); font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 3px; background: {badge_bg}; color: {s_color}; letter-spacing: 0.5px;">{status_str}</span>
               </div>
-              <div style="font-family: var(--font-heading); font-size: 15px; font-weight: bold;">{wo.get('componentName', 'Subsystem')}</div>
-              <div style="font-size: 11px; color: #cbd5e1;">{wo.get('predictedIssue', 'Nominal')}</div>
-              <div style="font-size: 11px; color: var(--text-muted);">{wo.get('recommendedAction', 'Routine Inspection')}</div>
-              <button class="btn-gcs btn-gcs-cyan btn-wo-overhaul" data-sub="{wo.get('subsystemId', '')}" style="margin-top: 6px;">
-                <i class="fa-solid fa-wrench"></i> Virtual Overhaul
-              </button>
+              <div style="font-family: var(--font-heading); font-size: 15px; font-weight: 700; color: var(--text-white); letter-spacing: 0.3px;">{wo.get('componentName', 'Subsystem')}</div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="flex: 1; background: #162235; border-radius: 3px; height: 6px; overflow: hidden;">
+                  <div style="width: {bar_w}%; height: 100%; background: {h_color}; border-radius: 3px; transition: width 0.4s ease;"></div>
+                </div>
+                <span style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: {h_color}; min-width: 38px;">{health:.1f}%</span>
+              </div>
+              <div style="font-family: var(--font-mono); font-size: 11px; color: #94a3b8; line-height: 1.4;">
+                <span style="color: var(--text-muted);">AI DIAGNOSIS: </span>{wo.get('predictedIssue', 'None. All telemetry nominal.')}
+              </div>
+              <div style="font-size: 11px; color: #cbd5e1; line-height: 1.5;">{wo.get('recommendedAction', 'Routine Inspection')}</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 2px;">
+                <div style="background: rgba(255,255,255,0.04); border-radius: 4px; padding: 6px 8px;">
+                  <div style="font-family: var(--font-mono); font-size: 9px; color: var(--text-muted);">SERVICE WINDOW</div>
+                  <div style="font-family: var(--font-heading); font-size: 11px; font-weight: 700; color: {p_color}; margin-top: 2px;">{wo.get('estServiceWindow', 'At next 50-Hour turnaround')}</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.04); border-radius: 4px; padding: 6px 8px;">
+                  <div style="font-family: var(--font-mono); font-size: 9px; color: var(--text-muted);">EST. MTTR</div>
+                  <div style="font-family: var(--font-heading); font-size: 11px; font-weight: 700; color: var(--text-white); margin-top: 2px;">{wo.get('estMTTR', '0.8 Hours')}</div>
+                </div>
+              </div>
+              <div style="font-size: 10px; color: var(--text-muted); font-family: var(--font-mono);">
+                <i class="fa-solid fa-box-archive" style="color: var(--color-cyan);"></i> SPARES: {wo.get('sparesRequired', 'Standard OEM Parts')}
+              </div>
+              <div style="display: flex; gap: 6px; margin-top: 4px;">
+                <button class="btn-gcs btn-gcs-cyan btn-wo-overhaul" data-sub="{wo.get('subsystemId', '')}" style="flex: 1; justify-content: center; padding: 7px; font-size: 11px;">
+                  <i class="fa-solid fa-wrench"></i> Virtual Overhaul
+                </button>
+                <button class="btn-gcs btn-wo-print" data-wo-id="{wo.get('id', '')}" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 5px; padding: 7px 10px; cursor: pointer; color: var(--text-gray); font-size: 11px;">
+                  <i class="fa-solid fa-print"></i>
+                </button>
+              </div>
             """
             container.appendChild(card)
 
+        # Wire Virtual Overhaul buttons
         buttons = container.querySelectorAll('.btn-wo-overhaul')
         for btn in buttons:
             def on_click(event, b=btn):
                 sub_id = b.getAttribute('data-sub')
                 self.maintenanceCenter.performVirtualMaintenance(sub_id)
+                snap = telemetryEngine.getSnapshot()
+                self.updateMaintenanceView(snap)
             btn.addEventListener('click', on_click)
+
+        # Wire Print buttons
+        print_buttons = container.querySelectorAll('.btn-wo-print')
+        for pbtn in print_buttons:
+            def on_print(event, pb=pbtn):
+                wo_id = pb.getAttribute('data-wo-id')
+                snap_inner = telemetryEngine.getSnapshot()
+                subs_inner = snap_inner.get("subsystems", {}) if isinstance(snap_inner, dict) else {}
+                orders_inner = self.maintenanceCenter.getWorkOrders(subs_inner)
+                target_wo = None
+                for w in orders_inner:
+                    if isinstance(w, dict) and w.get('id') == wo_id:
+                        target_wo = w
+                        break
+                if target_wo:
+                    wo_modal = document.getElementById('wo-modal-backdrop')
+                    wo_content = document.getElementById('wo-modal-content')
+                    if wo_content:
+                        wo_content.innerHTML = self.maintenanceCenter.generatePrintableWorkOrder(target_wo)
+                    if wo_modal:
+                        wo_modal.classList.add('active')
+            pbtn.addEventListener('click', on_print)
 
     def updateDemoBarUI(self, step, current_step, total_steps, remaining_seconds=None):
         tacticalAudio.playWarningChime()
@@ -1302,6 +1456,26 @@ class App:
             def on_close_modal(e):
                 if fault_modal: fault_modal.classList.remove('active')
             btn_close_fmodal.addEventListener('click', on_close_modal)
+
+        # Work Order Print Modal Close
+        wo_modal_bd = document.getElementById('wo-modal-backdrop')
+        btn_close_wo = document.getElementById('btn-close-wo-modal')
+        if btn_close_wo:
+            def on_close_wo(e):
+                if wo_modal_bd: wo_modal_bd.classList.remove('active')
+            btn_close_wo.addEventListener('click', on_close_wo)
+
+        # Backdrop click to close modals
+        if fault_modal:
+            def on_backdrop_click(e):
+                if e.target == fault_modal:
+                    fault_modal.classList.remove('active')
+            fault_modal.addEventListener('click', on_backdrop_click)
+        if wo_modal_bd:
+            def on_wo_backdrop_click(e):
+                if e.target == wo_modal_bd:
+                    wo_modal_bd.classList.remove('active')
+            wo_modal_bd.addEventListener('click', on_wo_backdrop_click)
 
         fault_cards = document.querySelectorAll('.fault-card-btn')
         for f_btn in fault_cards:

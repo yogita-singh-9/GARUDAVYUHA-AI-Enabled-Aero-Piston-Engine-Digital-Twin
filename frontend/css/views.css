@@ -128,6 +128,7 @@
   display: grid;
   grid-template-columns: 340px 1fr;
   overflow-y: auto;
+  align-items: start;
 }
 
 .rul-hero-box {
@@ -157,9 +158,10 @@
 }
 
 .chart-box-card {
-  height: 300px;
+  height: 340px;
   position: relative;
-  padding: 12px;
+  padding: 12px 14px;
+  overflow: hidden;
 }
 
 .component-health-matrix-table {
@@ -311,8 +313,9 @@
 
 .maintenance-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+  align-items: start;
 }
 
 .work-order-card {

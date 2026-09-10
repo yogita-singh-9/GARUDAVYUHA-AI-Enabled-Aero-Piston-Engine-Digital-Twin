@@ -792,8 +792,8 @@
             <span class="panel-title"><i class="fa-solid fa-chart-area"></i> Health Degradation Trajectory & RUL Projection</span>
             <span class="panel-badge">HISTORICAL vs PREDICTED</span>
           </div>
-          <div style="position: relative; height: 260px; width: 100%;">
-            <canvas id="rul-chart-canvas"></canvas>
+          <div style="position: relative; height: 270px; width: 100%;">
+            <canvas id="rul-chart-canvas" style="position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important;"></canvas>
           </div>
         </div>
 
@@ -1022,12 +1022,36 @@
     <section id="view-maintenance-center" class="view-section">
       <div class="panel-header" style="margin-bottom: 0;">
         <div>
-          <span class="panel-title" style="font-size: 16px;"><i class="fa-solid fa-screwdriver-wrench"></i> Predictive Maintenance & Technical Overhaul Center</span>
+          <span class="panel-title" style="font-size: 16px;"><i class="fa-solid fa-screwdriver-wrench"></i> Predictive Maintenance &amp; Technical Overhaul Center</span>
           <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
             AI-Driven Prognostics to Service Window Mapping for Rotax 914 MALE UAV Operations
           </div>
         </div>
         <div class="panel-badge">AEROSPACE DEFENCE PROTOCOL</div>
+      </div>
+
+      <!-- Live ML Summary Stats -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+        <div style="background: #0a101d; border: 1px solid rgba(0,240,255,0.2); border-radius: 6px; padding: 10px 14px;">
+          <div style="font-family: var(--font-mono); font-size: 9px; color: var(--text-muted); text-transform: uppercase;">Engine RUL</div>
+          <div style="font-family: var(--font-mono); font-size: 20px; font-weight: 900; color: #f59e0b; margin-top: 4px;" id="maint-rul-display">48.5 hrs</div>
+          <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">&#177; 5.2 hrs 95% CI</div>
+        </div>
+        <div style="background: #0a101d; border: 1px solid rgba(16,185,129,0.2); border-radius: 6px; padding: 10px 14px;">
+          <div style="font-family: var(--font-mono); font-size: 9px; color: var(--text-muted); text-transform: uppercase;">Engine Health</div>
+          <div style="font-family: var(--font-mono); font-size: 20px; font-weight: 900; color: #10b981; margin-top: 4px;" id="maint-health-display">98.4%</div>
+          <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Overall System State</div>
+        </div>
+        <div style="background: #0a101d; border: 1px solid rgba(245,158,11,0.2); border-radius: 6px; padding: 10px 14px;">
+          <div style="font-family: var(--font-mono); font-size: 9px; color: var(--text-muted); text-transform: uppercase;">Anomaly Score</div>
+          <div style="font-family: var(--font-mono); font-size: 20px; font-weight: 900; color: #f59e0b; margin-top: 4px;" id="maint-anomaly-display">0.04</div>
+          <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">IsolationForest Score</div>
+        </div>
+        <div style="background: #0a101d; border: 1px solid rgba(0,240,255,0.2); border-radius: 6px; padding: 10px 14px;">
+          <div style="font-family: var(--font-mono); font-size: 9px; color: var(--text-muted); text-transform: uppercase;">Post-Overhaul Readiness</div>
+          <div style="font-family: var(--font-mono); font-size: 20px; font-weight: 900; color: #00f0ff; margin-top: 4px;" id="maint-readiness-display">97.5%</div>
+          <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Projected After Service</div>
+        </div>
       </div>
 
       <div class="maintenance-cards-grid" id="maintenance-cards-container"></div>
