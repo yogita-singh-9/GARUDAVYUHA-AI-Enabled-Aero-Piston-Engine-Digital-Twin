@@ -417,7 +417,7 @@
 /* 8. BOTTOM ACTION ROW */
 .bottom-action-row {
   display: grid;
-  grid-template-columns: 340px 1fr 340px;
+  grid-template-columns: 215px 1fr 280px;
   gap: 8px;
 }
 

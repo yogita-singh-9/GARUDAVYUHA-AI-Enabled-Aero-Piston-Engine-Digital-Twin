@@ -5,25 +5,26 @@
 /* 1. COMMAND CENTER (MAIN VIEW) */
 #view-command-center {
   padding: 8px 12px;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: 1fr auto;
   gap: 8px;
   height: 100%;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .cc-main-grid {
   display: grid;
   grid-template-columns: 215px 1fr 280px;
   gap: 8px;
-  min-height: 440px;
-  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .cc-sidebar-left {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  overflow: hidden;
 }
 
 .cc-center-viewport {
@@ -32,23 +33,26 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .cc-sidebar-right {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  overflow: hidden;
 }
 
 .flex-1 {
   flex: 1;
+  min-height: 0;
 }
 
 .cc-bottom-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 2px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 /* 2. 3D DIGITAL TWIN FULL VIEW */

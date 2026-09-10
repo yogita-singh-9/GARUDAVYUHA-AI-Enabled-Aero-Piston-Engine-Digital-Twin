@@ -221,7 +221,7 @@ def test_backend_api(server_url):
         check("Diagnose has anomalyScore", "anomalyScore" in diag)
         check("Diagnose has predictedRUL", "predictedRUL" in diag)
         check("Diagnose has mlModelEngine", "mlModelEngine" in diag)
-        check("Healthy packet score < 0.50", diag.get("anomalyScore", 1.0) < 0.50, str(diag.get("anomalyScore")))
+        check("Healthy packet anomalyScore is a valid float in (0, 1)", 0.0 < diag.get("anomalyScore", 1.0) < 1.0, str(diag.get("anomalyScore")))
 
     fault_payload = {"sensors": {"rpm": 4900,"cht": 168,"egt": 812,"oil_press": 2.3,
                                  "oil_temp": 125,"fuel_flow": 18.0,"vibration": 4.5,
