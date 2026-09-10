@@ -142,6 +142,7 @@ class MissionSimulator:
             "predictedEndHealth": predicted_end_health,
             "missionRisk": mission_risk,
             "faultRiskCategory": fault_risk_category,
+            "riskCategory": fault_risk_category,        # alias for app.py sim panel
             "rulImpactHrs": rul_impact_hrs,
             "recommendation": recommendation,
             "timeSeries": {

@@ -342,26 +342,82 @@ class App:
             except Exception as err:
                 print("[GARUDAVYUHA App] Chart draw warning:", err)
 
-        # 5. Update Bottom AI Summary
-        score = float(snapshot.get("anomalyScore", 0.04))
+        # 5. Live status label, readiness risk, RUL badge ────────────────────
+        score = float(snapshot.get('anomalyScore', 0.04))
+        severity = str(snapshot.get('severity', 'LOW')).upper()
+        mission_risk = str(snapshot.get('missionRisk', 'LOW')).upper()
+        rul_val = float(snapshot.get('predictedRUL', 48.5))
+        rul_term = str(snapshot.get('rulTerm', 'MEDIUM TERM'))
+        confidence = float(snapshot.get('confidence', 96.4))
+        fault_name = str(snapshot.get('mostLikelyFault', 'Nominal Operation'))
+
+        h_status = document.getElementById('health-status-label')
+        if h_status:
+            is_healthy = health > 80 and score < 0.3
+            h_status.textContent = 'HEALTHY' if is_healthy else ('DEGRADING' if health > 50 else 'CRITICAL')
+            h_status.style.color = '#10b981' if is_healthy else ('#f59e0b' if health > 50 else '#ef4444')
+        h_conf = document.getElementById('health-conf-val')
+        if h_conf:
+            h_conf.textContent = f"{int(confidence)}%"
+
+        risk_label = document.getElementById('readiness-risk-label')
+        if risk_label:
+            risk_label.textContent = f"{mission_risk} RISK"
+            risk_label.style.color = '#ef4444' if mission_risk == 'HIGH' else ('#f59e0b' if mission_risk == 'MEDIUM' else '#10b981')
+
+        rul_badge = document.getElementById('rul-term-badge')
+        if rul_badge:
+            rul_badge.textContent = rul_term
+
+        rul_hours_text = document.getElementById('rul-hours-text')
+        if rul_hours_text:
+            rul_hours_text.textContent = f"{rul_val:.1f}"
+
+        # 6. Bottom AI summary bar ────────────────────────────────────────────
         score_text = document.getElementById('diag-score-text')
         if score_text:
             score_text.textContent = f"{score:.2f} / 1.00"
         score_fill = document.getElementById('diag-score-fill')
         if score_fill:
-            score_fill.style.width = f"{score * 100:.0f}%"
-
+            score_fill.style.width = f"{int(score * 100)}%"
+        fault_text_el = document.getElementById('diag-fault-text')
+        if fault_text_el:
+            fault_text_el.textContent = fault_name
+        sev_text = document.getElementById('diag-severity-text')
+        if sev_text:
+            sev_text.textContent = severity
         conf_meter = document.getElementById('diag-conf-meter')
         if conf_meter:
-            active_f = snapshot.get("activeFault")
-            prog = float(snapshot.get("faultProgression", 0.0))
-            conf = int(round(75 + prog * 18)) if active_f else 78
-            conf_meter.style.strokeDashoffset = 150.8 - (conf / 100.0) * 150.8
-            p_elem = document.getElementById('diag-conf-percent')
-            if p_elem:
-                p_elem.textContent = f"{conf}%"
+            conf_meter.style.strokeDashoffset = 150.8 - (confidence / 100.0) * 150.8
+        p_pct = document.getElementById('diag-conf-percent')
+        if p_pct:
+            p_pct.textContent = f"{int(confidence)}%"
+        rec_box = document.getElementById('rec-action-text')
+        if rec_box:
+            rec_box.textContent = snapshot.get('recommendationText', 'Continue scheduled flight profile.')
 
-        # Update dedicated views if active
+        # 7. Live alerts (auto-generate from anomaly state) ───────────────────
+        alerts_el = document.getElementById('alerts-container')
+        if alerts_el and score > 0.15:
+            shap_list = snapshot.get('shapAttribution', [])
+            alerts_el.innerHTML = ''
+            if score > 0.5:
+                a = document.createElement('div')
+                a.className = 'alert-item critical'
+                a.innerHTML = f'<i class="fa-solid fa-circle-exclamation"></i><div class="alert-content"><div class="alert-title">AI: {fault_name} detected</div><div class="alert-time">Confidence: {int(confidence)}%</div></div>'
+                alerts_el.appendChild(a)
+            if shap_list and len(shap_list) > 0:
+                top = shap_list[0]
+                a2 = document.createElement('div')
+                a2.className = 'alert-item warning'
+                arrow = '↑' if top.get('direction') == 'up' else '↓'
+                a2.innerHTML = f'<i class="fa-solid fa-triangle-exclamation"></i><div class="alert-content"><div class="alert-title">{top.get("parameter","")} {arrow} deviation</div><div class="alert-time">XAI weight: {top.get("weight",0):.1f}%</div></div>'
+                alerts_el.appendChild(a2)
+
+        # 8. Floating 3D card live update ─────────────────────────────────────
+        self.updateFloatingCardFromSnapshot(snapshot)
+
+        # 9. Update dedicated views if active
         if self.currentView == 'ai-diagnostics':
             self.updateAIDiagnosticsView(snapshot)
         elif self.currentView == 'rul-health':
@@ -425,6 +481,7 @@ class App:
             self.twin3D.highlightSubsystem(component_id, 'critical', True)
 
     def updateFloatingCard(self, component_id):
+        """Called when user clicks a component button — updates card for that specific component."""
         card = document.getElementById('floating-component-card')
         if not card:
             return
@@ -441,10 +498,70 @@ class App:
             'exhaust_system': 'EXHAUST & TURBO',
             'sensors': 'AVIONICS & SENSORS',
         }
-
         t_elem = document.getElementById('fcard-title')
         if t_elem:
             t_elem.textContent = titles.get(component_id, component_id.upper())
+
+        # Pull live ML data for this card
+        snap = telemetryEngine.getSnapshot()
+        self._renderFcardFromSnapshot(component_id, snap)
+
+    def updateFloatingCardFromSnapshot(self, snapshot):
+        """Auto-updates the floating card from each telemetry tick without user clicking."""
+        # Determine which component to show based on active fault or highest anomaly
+        active_f = snapshot.get('activeFault')
+        if isinstance(active_f, dict):
+            sub_id = active_f.get('subsystemId', '')
+            comp_map = {
+                'fuel_system': 'fuel_injector',
+                'lubrication': 'oil_system',
+                'cooling': 'cooling_system',
+                'cylinders': 'cylinder_1',
+                'turbo_exhaust': 'exhaust_system',
+                'ignition': 'ignition_system',
+                'sensor_ecu': 'sensors',
+            }
+            comp_id = comp_map.get(sub_id, 'fuel_injector')
+        else:
+            anom = float(snapshot.get('anomalyScore', 0.04))
+            comp_id = 'fuel_injector' if anom > 0.3 else 'sensors'
+        t_elem = document.getElementById('fcard-title')
+        titles = {
+            'fuel_injector': 'FUEL INJECTOR - 4',
+            'oil_system': 'OIL LUBRICATION',
+            'cooling_system': 'COOLING CIRCUIT',
+            'cylinder_1': 'CYLINDER-1', 'sensors': 'AVIONICS & SENSORS',
+            'exhaust_system': 'EXHAUST & TURBO', 'ignition_system': 'IGNITION SYSTEM',
+        }
+        if t_elem:
+            t_elem.textContent = titles.get(comp_id, 'ENGINE ASSEMBLY')
+        self._renderFcardFromSnapshot(comp_id, snapshot)
+
+    def _renderFcardFromSnapshot(self, component_id, snapshot):
+        """Core rendering of the floating component card using live ML snapshot data."""
+        score     = float(snapshot.get('anomalyScore', 0.04))
+        severity  = str(snapshot.get('severity', 'LOW')).upper()
+        fault_name = str(snapshot.get('mostLikelyFault', 'Nominal Operation'))
+        confidence = float(snapshot.get('confidence', 96.4))
+        rec_text   = str(snapshot.get('recommendationText', 'Component within certified operational envelope.'))
+        shap_list  = snapshot.get('shapAttribution', [])
+
+        # Subsystem-specific health from subsystems dict
+        subs = snapshot.get('subsystems', {})
+        sub_map = {
+            'fuel_injector': 'fuel_system',
+            'oil_system': 'lubrication',
+            'cooling_system': 'cooling',
+            'cylinder_1': 'cylinders', 'cylinder_2': 'cylinders',
+            'cylinder_3': 'cylinders', 'cylinder_4': 'cylinders',
+            'exhaust_system': 'turbo_exhaust',
+            'ignition_system': 'ignition',
+            'sensors': 'sensor_ecu',
+        }
+        sub_id = sub_map.get(component_id, '')
+        sub_data = subs.get(sub_id, {})
+        h_pct = float(sub_data.get('health', 96)) if isinstance(sub_data, dict) else 96.0
+        status = str(sub_data.get('status', 'healthy')) if isinstance(sub_data, dict) else 'healthy'
 
         badge = document.getElementById('fcard-badge')
         h_val = document.getElementById('fcard-health-val')
@@ -453,43 +570,52 @@ class App:
         p_val = document.getElementById('fcard-pred-val')
         c_val = document.getElementById('fcard-conf-val')
         r_text = document.getElementById('fcard-rec-text')
+        param_list = document.getElementById('fcard-param-list')
 
-        if component_id == 'fuel_injector':
-            if badge:
-                badge.textContent = 'CRITICAL'
-                badge.className = 'fcard-badge-critical'
-                badge.style.borderColor = '#ef4444'
-                badge.style.color = '#f87171'
-            if h_val: h_val.textContent = '23%'
-            if b_fill: b_fill.style.width = '23%'
-            if s_val: s_val.textContent = 'Abnormal'
-            if p_val: p_val.textContent = 'Injector Abnormality'
-            if c_val: c_val.textContent = '78%'
-            if r_text: r_text.textContent = 'Inspect injector and clean/replace if required'
-        elif component_id == 'oil_system':
-            if badge:
-                badge.textContent = 'WARNING'
-                badge.className = 'fcard-badge-critical'
-                badge.style.borderColor = '#f59e0b'
-                badge.style.color = '#fbbf24'
-            if h_val: h_val.textContent = '71%'
-            if b_fill: b_fill.style.width = '71%'
-            if s_val: s_val.textContent = 'Caution'
-            if p_val: p_val.textContent = 'Hydraulic Pressure Variance'
-            if c_val: c_val.textContent = '82%'
-            if r_text: r_text.textContent = 'Inspect oil filter and magnetic chip detector plug.'
+        if h_pct < 40 or status == 'critical':
+            badge_text = 'CRITICAL'; bc = '#ef4444'
+        elif h_pct < 75 or status == 'degrading':
+            badge_text = 'WARNING'; bc = '#f59e0b'
         else:
-            if badge:
-                badge.textContent = 'HEALTHY'
-                badge.className = 'fcard-badge-critical'
-                badge.style.borderColor = '#10b981'
-                badge.style.color = '#34d399'
-            if h_val: h_val.textContent = '96%'
-            if b_fill: b_fill.style.width = '96%'
-            if s_val: s_val.textContent = 'Normal'
-            if p_val: p_val.textContent = 'Nominal Operation'
-            if c_val: c_val.textContent = '98%'
-            if r_text: r_text.textContent = 'Component within certified operational envelope.'
+            badge_text = 'HEALTHY'; bc = '#10b981'
+
+        if badge:
+            badge.textContent = badge_text
+            badge.style.borderColor = bc
+            badge.style.color = bc
+        if h_val:
+            h_val.textContent = f"{h_pct:.0f}%"
+            h_val.style.color = bc
+        if b_fill:
+            b_fill.style.width = f"{h_pct:.0f}%"
+            b_fill.className = f"fcard-bar-fill {'red' if h_pct < 40 else ('yellow' if h_pct < 75 else 'green')}"
+        if s_val:
+            s_val.textContent = status.capitalize()
+            s_val.className = f"fcard-status-val {'red' if status == 'critical' else ('yellow' if status == 'degrading' else 'green')}"
+        if p_val:
+            p_val.textContent = fault_name
+            p_val.className = f"fcard-pred-val {'red' if severity in ('HIGH','CRITICAL') else ('yellow' if severity=='MEDIUM' else 'green')}"
+        if c_val:
+            c_val.textContent = f"{int(confidence)}%"
+        if r_text:
+            r_text.textContent = rec_text
+
+        # XAI param contributions in card
+        if param_list and shap_list:
+            param_list.innerHTML = ''
+            for item in shap_list[:3]:
+                if not isinstance(item, dict):
+                    continue
+                arrow = '\u2191' if item.get('direction') == 'up' else '\u2193'
+                sign = '+' if item.get('direction') == 'up' else '-'
+                w = float(item.get('weight', 0))
+                color = '#ef4444' if item.get('direction') == 'up' else '#60a5fa'
+                row = document.createElement('div')
+                row.className = 'fcard-param-row'
+                row.innerHTML = f'<span>{item.get("parameter","")}</span><span class="param-val-red" style="color:{color};">{arrow} {sign}{w:.0f}%</span>'
+                param_list.appendChild(row)
+        elif param_list and not shap_list:
+            param_list.innerHTML = '<div class="fcard-param-row"><span>All Parameters</span><span class="param-val-red" style="color:#10b981;">Within Limits</span></div>'
 
     def handleFaultTriggered(self, data):
         scenario = data.get("scenario", {}) if isinstance(data, dict) else {}
@@ -565,66 +691,185 @@ class App:
             self.updateMaintenanceView(snapshot)
 
     def updateAIDiagnosticsView(self, snapshot):
-        ai_data = aiDiagnostics.evaluate(snapshot)
-        if not isinstance(ai_data, dict):
-            ai_data = {}
+        # Pull directly from snapshot (populated by live ML or simulation)
+        score       = float(snapshot.get('anomalyScore', 0.04))
+        severity    = str(snapshot.get('severity', 'LOW')).upper()
+        fault_name  = str(snapshot.get('mostLikelyFault', 'Nominal Operation'))
+        confidence  = float(snapshot.get('confidence', 96.4))
+        shap_list   = snapshot.get('shapAttribution', [])
+        diag_text   = str(snapshot.get('diagnosisText', ''))
+        rec_text    = str(snapshot.get('recommendationText', ''))
+
+        # Also run evaluate() to fire async POST to /api/v1/diagnose
+        aiDiagnostics.evaluate(snapshot)
+
+        # ── Anomaly score bar ──────────────────────────────────────────────────
         score_elem = document.getElementById('ai-view-score')
         if score_elem:
-            score_elem.textContent = str(ai_data.get("anomalyScore", 0.04))
-
+            score_elem.textContent = f"{score:.2f}"
         bar = document.getElementById('ai-view-score-bar')
         if bar:
-            bar.style.width = f"{ai_data.get('anomalyPercentage', 4)}%"
+            bar.style.width = f"{int(score * 100)}%"
+            bar.className = f"xai-fill {'up' if score > 0.3 else 'neutral'}"
 
+        # ── Severity badge ────────────────────────────────────────────────────
+        badge = document.getElementById('ai-view-badge')
+        if badge:
+            badge.textContent = severity
+            sev_class = 'badge-critical' if severity in ('HIGH', 'CRITICAL') else ('badge-warning' if severity == 'MEDIUM' else 'badge-healthy')
+            badge.className = f"panel-badge {sev_class}"
+
+        # ── Fault info ────────────────────────────────────────────────────────
+        fn = document.getElementById('ai-view-fault-name')
+        if fn:
+            fn.textContent = fault_name
+            fn.style.color = '#ef4444' if severity in ('HIGH','CRITICAL') else ('#f59e0b' if severity == 'MEDIUM' else '#10b981')
+
+        sub_name = 'All Subsystems Nominal'
+        if hasattr(snapshot.get('activeFault', None), '__class__'):
+            pass
+        active_f = snapshot.get('activeFault')
+        if isinstance(active_f, dict):
+            from config import ENGINE_SUBSYSTEMS
+            sub_id = active_f.get('subsystemId')
+            if sub_id and sub_id in ENGINE_SUBSYSTEMS:
+                sub_name = ENGINE_SUBSYSTEMS[sub_id]['name']
+        fs = document.getElementById('ai-view-fault-subsystem')
+        if fs:
+            fs.textContent = sub_name
+
+        conf_el = document.getElementById('ai-view-confidence')
+        if conf_el:
+            conf_el.textContent = f"{confidence:.0f}%"
+        sev_el = document.getElementById('ai-view-severity')
+        if sev_el:
+            sev_el.textContent = severity
+            sev_el.style.color = '#ef4444' if severity in ('HIGH','CRITICAL') else ('#f59e0b' if severity == 'MEDIUM' else '#10b981')
+
+        # ── SHAP / XAI contribution bars ──────────────────────────────────────
         xai_container = document.getElementById('xai-contributions-container')
         if xai_container:
             xai_container.innerHTML = ''
-            for attr in ai_data.get("shapAttribution", []):
+            items = shap_list if isinstance(shap_list, list) and shap_list else [
+                {'parameter': 'RPM Stability',        'weight': 22.5, 'direction': 'up'},
+                {'parameter': 'CHT Thermal Balance',  'weight': 18.0, 'direction': 'down'},
+                {'parameter': 'Oil Gallery Pressure', 'weight': 15.2, 'direction': 'down'},
+            ]
+            for attr in items:
                 if not isinstance(attr, dict):
                     continue
+                weight = float(attr.get('weight', 0))
+                direction = str(attr.get('direction', 'up'))
+                arrow = '↑' if direction == 'up' else '↓'
+                fill_class = 'xai-fill up' if direction == 'up' else 'xai-fill down'
                 row = document.createElement('div')
                 row.className = 'xai-item'
-                arrow = '↑' if attr.get('direction') == 'up' else '↓'
                 row.innerHTML = f"""
                   <div class="xai-labels">
                     <span>{attr.get('parameter', 'Sensor')}</span>
-                    <span class="dir-up">{arrow} {attr.get('weight', 0)}%</span>
+                    <span class="{'dir-up' if direction == 'up' else 'dir-down'}">{arrow} {weight:.1f}%</span>
                   </div>
                   <div class="xai-track">
-                    <div class="xai-fill up" style="width: {attr.get('weight', 0)}%;"></div>
+                    <div class="{fill_class}" style="width: {min(100,weight):.1f}%;"></div>
                   </div>
                 """
                 xai_container.appendChild(row)
 
+        # ── AI Interpretation text ────────────────────────────────────────────
+        nat_box = document.getElementById('ai-natural-explanation')
+        if nat_box:
+            nat_box.innerHTML = f"<strong>AI INTERPRETATION:</strong> {diag_text}"
+
+        # ── Actionable tactical advisory ──────────────────────────────────────
+        tac_box = document.getElementById('ai-tactical-recommendation')
+        if tac_box:
+            tac_box.textContent = rec_text
+
+        # ── Bottom summary bar (command center) ───────────────────────────────
+        score_text = document.getElementById('diag-score-text')
+        if score_text:
+            score_text.textContent = f"{score:.2f} / 1.00"
+        score_fill = document.getElementById('diag-score-fill')
+        if score_fill:
+            score_fill.style.width = f"{int(score * 100)}%"
+        fault_text = document.getElementById('diag-fault-text')
+        if fault_text:
+            fault_text.textContent = fault_name
+        sev_text = document.getElementById('diag-severity-text')
+        if sev_text:
+            sev_text.textContent = severity
+            sev_text.className = f"diag-severity-val {'red' if severity in ('HIGH','CRITICAL') else ('yellow' if severity == 'MEDIUM' else 'green')}"
+        conf_meter = document.getElementById('diag-conf-meter')
+        if conf_meter:
+            conf_meter.style.strokeDashoffset = 150.8 - (confidence / 100.0) * 150.8
+        p_pct = document.getElementById('diag-conf-percent')
+        if p_pct:
+            p_pct.textContent = f"{int(confidence)}%"
+        rec_box = document.getElementById('rec-action-text')
+        if rec_box:
+            rec_box.textContent = rec_text
+
     def updateRULView(self, snapshot):
+        rul = float(snapshot.get('predictedRUL', 48.5))
+        rul_ci = float(snapshot.get('rulCI', 5.2))
+        rul_term = str(snapshot.get('rulTerm', 'MEDIUM TERM'))
+        health = float(snapshot.get('health', 98.4))
+        flight_hrs = float(snapshot.get('flightHours', 480.0))
+
+        # ── RUL hero display ──────────────────────────────────────────────────
         hours_elem = document.getElementById('rul-view-hours')
         if hours_elem:
-            hours_elem.textContent = f"{snapshot.get('predictedRUL', 48.5)} HOURS"
+            hours_elem.textContent = f"{rul:.1f} HOURS"
+        margin_el = document.getElementById('rul-view-margin')
+        if margin_el:
+            margin_el.textContent = f"\u00b1 {rul_ci:.1f} Hours (95% CI)"
+        badge_el = document.getElementById('rul-view-status-badge')
+        if badge_el:
+            badge_el.textContent = rul_term
+            badge_el.className = f"panel-badge {'badge-critical' if rul < 20 else ('badge-warning' if rul < 50 else 'badge-healthy')}"
 
-        self.renderRULChart(snapshot.get("health", 98.4), snapshot.get("predictedRUL", 48.5))
+        # ── Accumulated flight hours ──────────────────────────────────────────
+        # Find the Accumulated TBO span by text proximity (no direct id)
+        # Degrade rate: d(health)/dt approximation
+        # history-based: use snapshot anomaly to compute rate
+        anom = float(snapshot.get('anomalyScore', 0.04))
+        degrade_rate = round(anom * 0.14 + 0.02, 3)
+        deg_el = document.getElementById('rul-degradation-rate')
+        if deg_el:
+            deg_el.textContent = f"Accelerated (+{degrade_rate:.2f}%/hr)" if anom > 0.1 else "Nominal (+0.02%/hr)"
+            deg_el.style.color = '#ef4444' if anom > 0.5 else ('#f59e0b' if anom > 0.2 else '#10b981')
 
+        # ── RUL Degradation Chart ─────────────────────────────────────────────
+        self.renderRULChart(health, rul, flight_hrs)
+
+        # ── Component Health Matrix ───────────────────────────────────────────
         tbody = document.getElementById('component-health-tbody')
         if tbody:
             matrix = rulHealthAnalytics.getComponentHealthMatrix(snapshot.get("subsystems", {}))
             tbody.innerHTML = ''
             for c in matrix:
                 tr = document.createElement('tr')
-                pri_color = 'var(--color-red)' if c.get('priority') == 'URGENT' else 'var(--text-gray)'
+                h_val = float(c.get('health', 98))
+                cond = c.get('condition', 'OPTIMAL')
+                pri = c.get('priority', 'LOW')
+                pri_color = '#ef4444' if pri == 'URGENT' else ('#f59e0b' if pri == 'MEDIUM' else '#94a3b8')
+                h_color = '#ef4444' if h_val < 40 else ('#f59e0b' if h_val < 75 else '#10b981')
                 tr.innerHTML = f"""
                   <td><strong>{c.get('name', 'Subsystem')}</strong></td>
-                  <td><span class="panel-badge {c.get('badgeClass', '')}">{c.get('health', 98)}%</span></td>
-                  <td>{c.get('condition', 'Normal')}</td>
+                  <td><span style="color: {h_color}; font-weight: 700; font-family: var(--font-mono);">{h_val:.1f}%</span></td>
+                  <td>{cond}</td>
                   <td>{c.get('remainingHrs', 0)} hrs</td>
-                  <td style="color: {pri_color};">{c.get('priority', 'NOMINAL')}</td>
+                  <td style="color: {pri_color}; font-weight: 700;">{pri}</td>
                 """
                 tbody.appendChild(tr)
 
-    def renderRULChart(self, health, rul):
+    def renderRULChart(self, health, rul, flight_hours=480.0):
         canvas = document.getElementById('rul-chart-canvas')
         if not canvas or not IN_BROWSER or not hasattr(window, 'Chart'):
             return
 
-        curve_data = rulHealthAnalytics.generateDegradationCurve(health, rul)
+        # Pass live flight hours to the curve generator
+        curve_data = rulHealthAnalytics.generateDegradationCurve(health, rul, flight_hours)
         if not isinstance(curve_data, dict):
             curve_data = {}
 
@@ -721,16 +966,28 @@ class App:
         self.simulationStepIndex = 0
         self.simulationActive = True
 
+        risk_val = str(result.get('missionRisk', 'LOW')).upper()
+        risk_color = '#ef4444' if risk_val in ('HIGH','CRITICAL') else ('#f59e0b' if risk_val == 'MEDIUM' else '#10b981')
+
         res_risk = document.getElementById('sim-result-risk')
-        if res_risk: res_risk.textContent = result.get('missionRisk', 'LOW')
+        if res_risk:
+            res_risk.textContent = risk_val
+            res_risk.style.color = risk_color
+        res_risk_desc = document.getElementById('sim-result-risk-desc')
+        if res_risk_desc:
+            res_risk_desc.textContent = result.get('riskCategory', 'Thermal Stress')
         res_cht = document.getElementById('sim-result-cht')
-        if res_cht: res_cht.textContent = f"{result.get('projectedPeakCHT', 142)} °C"
+        if res_cht: res_cht.textContent = f"{result.get('projectedPeakCHT', 142):.1f} \u00b0C"
         res_egt = document.getElementById('sim-result-egt')
-        if res_egt: res_egt.textContent = f"{result.get('projectedPeakEGT', 715)} °C"
+        if res_egt: res_egt.textContent = f"{result.get('projectedPeakEGT', 715):.1f} \u00b0C"
         res_rul = document.getElementById('sim-result-rul')
-        if res_rul: res_rul.textContent = f"{result.get('rulImpactHrs', 8.5)} h"
+        if res_rul: res_rul.textContent = f"{result.get('rulImpactHrs', 8.5):.1f} h"
         res_end = document.getElementById('sim-result-end-health')
-        if res_end: res_end.textContent = f"{result.get('predictedEndHealth', 98.4)}%"
+        if res_end: res_end.textContent = f"{result.get('predictedEndHealth', 98.4):.1f}%"
+
+        sim_rec = document.getElementById('sim-recommendation-box')
+        if sim_rec:
+            sim_rec.textContent = result.get('recommendation', 'Review cooling/lubrication condition before mission.')
 
         self.renderSimulationChart(result)
 
@@ -1096,13 +1353,62 @@ class App:
                 if self.twin3D: self.twin3D.setCameraPreset('default')
             btn_reset_cam.addEventListener('click', on_reset_cam)
 
-        # 6. Preset Scenario triggers
-        for preset_id, config in missionSimulator.presets.items():
-            btn = document.getElementById(f"sim-preset-btn-{preset_id}")
-            if btn:
-                def make_preset_handler(pid=preset_id):
-                    return lambda e: self.loadAndExecutePreset(pid)
-                btn.addEventListener('click', make_preset_handler())
+        # 6. Preset Scenario chip buttons (data-preset attribute)
+        preset_chips = document.querySelectorAll('.preset-chip-btn')
+        for chip in preset_chips:
+            def make_chip_handler(c=chip):
+                def handler(e):
+                    tacticalAudio.playClick()
+                    # Remove active from all chips
+                    for ch in preset_chips:
+                        ch.classList.remove('active')
+                    c.classList.add('active')
+                    pid = c.getAttribute('data-preset')
+                    self.loadAndExecutePreset(pid)
+                return handler
+            chip.addEventListener('click', make_chip_handler())
+
+        # Slider live label updates
+        sim_alt = document.getElementById('sim-alt')
+        if sim_alt:
+            def on_alt_change(e):
+                lbl = document.getElementById('lbl-sim-alt')
+                if lbl: lbl.textContent = f"{int(float(e.target.value)):,} ft"
+            sim_alt.addEventListener('input', on_alt_change)
+
+        sim_temp = document.getElementById('sim-temp')
+        if sim_temp:
+            def on_temp_change(e):
+                lbl = document.getElementById('lbl-sim-temp')
+                if lbl: lbl.textContent = f"{int(float(e.target.value))} \u00b0C"
+            sim_temp.addEventListener('input', on_temp_change)
+
+        sim_dur = document.getElementById('sim-duration')
+        if sim_dur:
+            def on_dur_change(e):
+                lbl = document.getElementById('lbl-sim-duration')
+                val = float(e.target.value)
+                if lbl: lbl.textContent = f"{val:.1f} Hours" if val != int(val) else f"{int(val)} Hours"
+            sim_dur.addEventListener('input', on_dur_change)
+
+        # Apply Stress to 3D Digital Twin button
+        btn_apply_twin = document.getElementById('btn-apply-sim-twin')
+        if btn_apply_twin:
+            def on_apply_twin(e):
+                tacticalAudio.playClick()
+                if self.simulationDataPayload and isinstance(self.simulationDataPayload, dict):
+                    risk = self.simulationDataPayload.get('missionRisk', 'LOW')
+                    if risk in ('HIGH', 'CRITICAL'):
+                        telemetryEngine.triggerFault('overheating')
+                    elif risk == 'MEDIUM':
+                        telemetryEngine.triggerFault('injector_abnormality')
+                    else:
+                        telemetryEngine.resetToHealthy()
+                    if self.twin3D:
+                        sub = 'cooling' if risk in ('HIGH','CRITICAL') else 'fuel_system'
+                        self.twin3D.highlightSubsystem(sub, 'critical' if risk=='HIGH' else 'warning', True)
+                    self.switchView('command-center')
+            btn_apply_twin.addEventListener('click', on_apply_twin)
 
         # 7. Master Run Simulation Button
         run_btn = document.getElementById('btn-run-simulation')

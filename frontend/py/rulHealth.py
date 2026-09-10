@@ -12,7 +12,7 @@ class RULHealthAnalytics:
         self.maintenanceThreshold = 60.0  # % health threshold requiring ground maintenance
         self.historicalHours = [0, 50, 100, 150, 200, 250, 300, 350, 400, 450, 480]
 
-    def generateDegradationCurve(self, current_health, current_rul):
+    def generateDegradationCurve(self, current_health, current_rul, flight_hours=480.0):
         labels = []
         historical_data = []
         predicted_mean = []
