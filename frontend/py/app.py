@@ -32,6 +32,7 @@ from audio import tacticalAudio
 class App:
     def __init__(self):
         self.currentView = 'command-center'
+        self.selectedComponent = None   # tracks last manually-selected component
         self.twin3D = None
         self.demoController = None
         self.missionReplay = None
@@ -463,6 +464,8 @@ class App:
 
     def handleComponentSelected(self, component_id):
         tacticalAudio.playClick()
+        # Remember which component the user manually selected
+        self.selectedComponent = component_id
 
         # Update In-Scene Component Status Buttons
         buttons = document.querySelectorAll('.comp-status-btn')
@@ -507,46 +510,114 @@ class App:
         self._renderFcardFromSnapshot(component_id, snap)
 
     def updateFloatingCardFromSnapshot(self, snapshot):
-        """Auto-updates the floating card from each telemetry tick without user clicking."""
-        # Determine which component to show based on active fault or highest anomaly
-        active_f = snapshot.get('activeFault')
-        if isinstance(active_f, dict):
-            sub_id = active_f.get('subsystemId', '')
-            comp_map = {
-                'fuel_system': 'fuel_injector',
-                'lubrication': 'oil_system',
-                'cooling': 'cooling_system',
-                'cylinders': 'cylinder_1',
-                'turbo_exhaust': 'exhaust_system',
-                'ignition': 'ignition_system',
-                'sensor_ecu': 'sensors',
-            }
-            comp_id = comp_map.get(sub_id, 'fuel_injector')
+        """Auto-updates the floating card from each telemetry tick without user clicking.
+        If the user has manually selected a component, we honour that selection and only
+        refresh its live health values — we do NOT switch away from it.
+        """
+        # If user has manually selected a component, keep showing it; just refresh values
+        if self.selectedComponent:
+            comp_id = self.selectedComponent
         else:
-            anom = float(snapshot.get('anomalyScore', 0.04))
-            comp_id = 'fuel_injector' if anom > 0.3 else 'sensors'
-        t_elem = document.getElementById('fcard-title')
+            # No manual selection: auto-pick based on active fault or anomaly score
+            active_f = snapshot.get('activeFault')
+            if isinstance(active_f, dict):
+                sub_id = active_f.get('subsystemId', '')
+                comp_map = {
+                    'fuel_system': 'fuel_injector',
+                    'lubrication': 'oil_system',
+                    'cooling': 'cooling_system',
+                    'cylinders': 'cylinder_1',
+                    'turbo_exhaust': 'exhaust_system',
+                    'ignition': 'ignition_system',
+                    'sensor_ecu': 'sensors',
+                }
+                comp_id = comp_map.get(sub_id, 'sensors')
+            else:
+                anom = float(snapshot.get('anomalyScore', 0.04))
+                comp_id = 'fuel_injector' if anom > 0.3 else 'sensors'
+
         titles = {
             'fuel_injector': 'FUEL INJECTOR - 4',
+            'cylinder_1': 'CYLINDER - 1',
+            'cylinder_2': 'CYLINDER - 2',
+            'cylinder_3': 'CYLINDER - 3',
+            'cylinder_4': 'CYLINDER - 4',
             'oil_system': 'OIL LUBRICATION',
             'cooling_system': 'COOLING CIRCUIT',
-            'cylinder_1': 'CYLINDER-1', 'sensors': 'AVIONICS & SENSORS',
-            'exhaust_system': 'EXHAUST & TURBO', 'ignition_system': 'IGNITION SYSTEM',
+            'exhaust_system': 'EXHAUST & TURBO',
+            'ignition_system': 'IGNITION SYSTEM',
+            'sensors': 'AVIONICS & SENSORS',
         }
+        t_elem = document.getElementById('fcard-title')
         if t_elem:
-            t_elem.textContent = titles.get(comp_id, 'ENGINE ASSEMBLY')
+            t_elem.textContent = titles.get(comp_id, comp_id.upper().replace('_', ' '))
         self._renderFcardFromSnapshot(comp_id, snapshot)
 
+    # Per-component static reference data shown when no active fault targets that subsystem
+    COMP_STATIC_DATA = {
+        'cylinder_1': {
+            'nominal_prediction': 'Normal Combustion',
+            'nominal_rec': 'Continue scheduled flight profile. No corrective action required.',
+            'params': [('CHT', 'normal', '+0%'), ('Compression', 'normal', '+0%'), ('Vibration', 'normal', '+0%')],
+        },
+        'cylinder_2': {
+            'nominal_prediction': 'Normal Combustion',
+            'nominal_rec': 'Continue scheduled flight profile. No corrective action required.',
+            'params': [('CHT', 'normal', '+0%'), ('Compression', 'normal', '+0%'), ('EGT', 'normal', '+0%')],
+        },
+        'cylinder_3': {
+            'nominal_prediction': 'Normal Combustion',
+            'nominal_rec': 'Continue scheduled flight profile. No corrective action required.',
+            'params': [('CHT', 'normal', '+0%'), ('Compression', 'normal', '+0%'), ('EGT', 'normal', '+0%')],
+        },
+        'cylinder_4': {
+            'nominal_prediction': 'Normal Combustion',
+            'nominal_rec': 'Continue scheduled flight profile. No corrective action required.',
+            'params': [('CHT', 'normal', '+0%'), ('Compression', 'normal', '+0%'), ('EGT', 'normal', '+0%')],
+        },
+        'fuel_injector': {
+            'nominal_prediction': 'Nominal Fuel Delivery',
+            'nominal_rec': 'Fuel delivery within spec. No corrective action required.',
+            'params': [('Fuel Flow', 'normal', '+0%'), ('Rail Pressure', 'normal', '+0%'), ('EGT', 'normal', '+0%')],
+        },
+        'ignition_system': {
+            'nominal_prediction': 'Nominal Ignition',
+            'nominal_rec': 'Spark timing and voltage nominal. No corrective action required.',
+            'params': [('Spark Timing', 'normal', '+0%'), ('Voltage', 'normal', '+0%'), ('RPM', 'normal', '+0%')],
+        },
+        'oil_system': {
+            'nominal_prediction': 'Nominal Lubrication',
+            'nominal_rec': 'Oil pressure and temperature within certified limits.',
+            'params': [('Oil Pressure', 'normal', '+0%'), ('Oil Temp', 'normal', '+0%'), ('Flow Rate', 'normal', '+0%')],
+        },
+        'cooling_system': {
+            'nominal_prediction': 'Nominal Cooling',
+            'nominal_rec': 'Coolant flow and CHT within safe operating range.',
+            'params': [('CHT', 'normal', '+0%'), ('Coolant Flow', 'normal', '+0%'), ('Ambient Temp', 'normal', '+0%')],
+        },
+        'exhaust_system': {
+            'nominal_prediction': 'Nominal Exhaust Flow',
+            'nominal_rec': 'EGT and back-pressure within turbo operational bounds.',
+            'params': [('EGT', 'normal', '+0%'), ('Back Pressure', 'normal', '+0%'), ('Turbo RPM', 'normal', '+0%')],
+        },
+        'sensors': {
+            'nominal_prediction': 'Nominal Operation',
+            'nominal_rec': 'Continue scheduled flight profile. No corrective action required.',
+            'params': [('All Parameters', 'normal', 'Within Limits')],
+        },
+    }
+
     def _renderFcardFromSnapshot(self, component_id, snapshot):
-        """Core rendering of the floating component card using live ML snapshot data."""
-        score     = float(snapshot.get('anomalyScore', 0.04))
-        severity  = str(snapshot.get('severity', 'LOW')).upper()
-        fault_name = str(snapshot.get('mostLikelyFault', 'Nominal Operation'))
+        """Core rendering of the floating component card using live ML snapshot data.
+        When no active fault targets this specific component, falls back to per-component
+        nominal data so every component shows distinct, meaningful information.
+        """
+        score      = float(snapshot.get('anomalyScore', 0.04))
+        severity   = str(snapshot.get('severity', 'LOW')).upper()
         confidence = float(snapshot.get('confidence', 96.4))
-        rec_text   = str(snapshot.get('recommendationText', 'Component within certified operational envelope.'))
         shap_list  = snapshot.get('shapAttribution', [])
 
-        # Subsystem-specific health from subsystems dict
+        # Sub-system health
         subs = snapshot.get('subsystems', {})
         sub_map = {
             'fuel_injector': 'fuel_system',
@@ -558,18 +629,36 @@ class App:
             'ignition_system': 'ignition',
             'sensors': 'sensor_ecu',
         }
-        sub_id = sub_map.get(component_id, '')
+        sub_id   = sub_map.get(component_id, '')
         sub_data = subs.get(sub_id, {})
-        h_pct = float(sub_data.get('health', 96)) if isinstance(sub_data, dict) else 96.0
-        status = str(sub_data.get('status', 'healthy')) if isinstance(sub_data, dict) else 'healthy'
+        h_pct    = float(sub_data.get('health', 96)) if isinstance(sub_data, dict) else 96.0
+        status   = str(sub_data.get('status', 'healthy')) if isinstance(sub_data, dict) else 'healthy'
 
-        badge = document.getElementById('fcard-badge')
-        h_val = document.getElementById('fcard-health-val')
-        b_fill = document.getElementById('fcard-bar-fill')
-        s_val = document.getElementById('fcard-status-val')
-        p_val = document.getElementById('fcard-pred-val')
-        c_val = document.getElementById('fcard-conf-val')
-        r_text = document.getElementById('fcard-rec-text')
+        # Determine if the ACTIVE fault actually belongs to this component's subsystem
+        active_f       = snapshot.get('activeFault')
+        fault_sub_id   = active_f.get('subsystemId', '') if isinstance(active_f, dict) else ''
+        fault_on_comp  = (fault_sub_id == sub_id) and bool(fault_sub_id)
+
+        # Pick prediction text and recommendation
+        static = self.COMP_STATIC_DATA.get(component_id, {})
+        if fault_on_comp or score > 0.3:
+            # Global fault is relevant to this component — use ML data
+            fault_name = str(snapshot.get('mostLikelyFault', 'Nominal Operation'))
+            rec_text   = str(snapshot.get('recommendationText', 'Monitor closely.'))
+            use_shap   = shap_list
+        else:
+            # Healthy / no fault on this specific part — use per-component nominal data
+            fault_name = static.get('nominal_prediction', 'Nominal Operation')
+            rec_text   = static.get('nominal_rec', 'Component within certified operational envelope.')
+            use_shap   = []  # show "Within Limits" params for healthy components
+
+        badge      = document.getElementById('fcard-badge')
+        h_val      = document.getElementById('fcard-health-val')
+        b_fill     = document.getElementById('fcard-bar-fill')
+        s_val      = document.getElementById('fcard-status-val')
+        p_val      = document.getElementById('fcard-pred-val')
+        c_val      = document.getElementById('fcard-conf-val')
+        r_text     = document.getElementById('fcard-rec-text')
         param_list = document.getElementById('fcard-param-list')
 
         if h_pct < 40 or status == 'critical':
@@ -594,28 +683,38 @@ class App:
             s_val.className = f"fcard-status-val {'red' if status == 'critical' else ('yellow' if status == 'degrading' else 'green')}"
         if p_val:
             p_val.textContent = fault_name
-            p_val.className = f"fcard-pred-val {'red' if severity in ('HIGH','CRITICAL') else ('yellow' if severity=='MEDIUM' else 'green')}"
+            p_val.className = f"fcard-pred-val {'red' if severity in ('HIGH','CRITICAL') and fault_on_comp else 'green'}"
         if c_val:
             c_val.textContent = f"{int(confidence)}%"
         if r_text:
             r_text.textContent = rec_text
 
-        # XAI param contributions in card
-        if param_list and shap_list:
-            param_list.innerHTML = ''
-            for item in shap_list[:3]:
-                if not isinstance(item, dict):
-                    continue
-                arrow = '\u2191' if item.get('direction') == 'up' else '\u2193'
-                sign = '+' if item.get('direction') == 'up' else '-'
-                w = float(item.get('weight', 0))
-                color = '#ef4444' if item.get('direction') == 'up' else '#60a5fa'
-                row = document.createElement('div')
-                row.className = 'fcard-param-row'
-                row.innerHTML = f'<span>{item.get("parameter","")}</span><span class="param-val-red" style="color:{color};">{arrow} {sign}{w:.0f}%</span>'
-                param_list.appendChild(row)
-        elif param_list and not shap_list:
-            param_list.innerHTML = '<div class="fcard-param-row"><span>All Parameters</span><span class="param-val-red" style="color:#10b981;">Within Limits</span></div>'
+        # Parameter list
+        if param_list:
+            if use_shap:
+                param_list.innerHTML = ''
+                for item in use_shap[:3]:
+                    if not isinstance(item, dict):
+                        continue
+                    arrow = '\u2191' if item.get('direction') == 'up' else '\u2193'
+                    sign  = '+' if item.get('direction') == 'up' else '-'
+                    w     = float(item.get('weight', 0))
+                    color = '#ef4444' if item.get('direction') == 'up' else '#60a5fa'
+                    row   = document.createElement('div')
+                    row.className = 'fcard-param-row'
+                    row.innerHTML = f'<span>{item.get("parameter","")}</span><span class="param-val-red" style="color:{color};">{arrow} {sign}{w:.0f}%</span>'
+                    param_list.appendChild(row)
+            else:
+                # Healthy component: show nominal parameter rows from static data
+                static_params = static.get('params', [('All Parameters', 'normal', 'Within Limits')])
+                param_list.innerHTML = ''
+                for param_entry in static_params:
+                    label = param_entry[0] if len(param_entry) > 0 else 'Parameter'
+                    val   = param_entry[2] if len(param_entry) > 2 else 'OK'
+                    row   = document.createElement('div')
+                    row.className = 'fcard-param-row'
+                    row.innerHTML = f'<span>{label}</span><span class="param-val-red" style="color:#10b981;">{val}</span>'
+                    param_list.appendChild(row)
 
     def handleFaultTriggered(self, data):
         scenario = data.get("scenario", {}) if isinstance(data, dict) else {}
